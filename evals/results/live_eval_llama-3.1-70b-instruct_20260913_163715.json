@@ -1,0 +1,49 @@
+{
+  "timestamp": "2026-09-13T16:37:15",
+  "model": "meta/llama-3.1-70b-instruct",
+  "casos": 5,
+  "casos_pass": 0,
+  "json_valido": 0,
+  "runs": [
+    {
+      "caso": "normal",
+      "json_valido": false,
+      "all_pass": false,
+      "error": "APIStatusError: Error code: 410 - {'type': 'about:blank', 'title': 'Gone', 'status': 410, 'detail': \"The model 'meta/llama-3.1-70b-instruct' has reached its end of life on 2026-08-26T09:00:00Z and is no longer available.\"}",
+      "raw": null,
+      "latencia_s": 2.78
+    },
+    {
+      "caso": "incompleto",
+      "json_valido": false,
+      "all_pass": false,
+      "error": "APIStatusError: Error code: 410 - {'type': 'about:blank', 'title': 'Gone', 'status': 410, 'detail': \"The model 'meta/llama-3.1-70b-instruct' has reached its end of life on 2026-08-26T09:00:00Z and is no longer available.\"}",
+      "raw": null,
+      "latencia_s": 0.09
+    },
+    {
+      "caso": "contradictorio",
+      "json_valido": false,
+      "all_pass": false,
+      "error": "APIStatusError: Error code: 410 - {'type': 'about:blank', 'title': 'Gone', 'status': 410, 'detail': \"The model 'meta/llama-3.1-70b-instruct' has reached its end of life on 2026-08-26T09:00:00Z and is no longer available.\"}",
+      "raw": null,
+      "latencia_s": 0.1
+    },
+    {
+      "caso": "prompt_injection",
+      "json_valido": false,
+      "all_pass": false,
+      "error": "APIStatusError: Error code: 410 - {'type': 'about:blank', 'title': 'Gone', 'status': 410, 'detail': \"The model 'meta/llama-3.1-70b-instruct' has reached its end of life on 2026-08-26T09:00:00Z and is no longer available.\"}",
+      "raw": null,
+      "latencia_s": 0.09
+    },
+    {
+      "caso": "sin_datos",
+      "json_valido": false,
+      "all_pass": false,
+      "error": "APIStatusError: Error code: 410 - {'type': 'about:blank', 'title': 'Gone', 'status': 410, 'detail': \"The model 'meta/llama-3.1-70b-instruct' has reached its end of life on 2026-08-26T09:00:00Z and is no longer available.\"}",
+      "raw": null,
+      "latencia_s": 0.1
+    }
+  ]
+}

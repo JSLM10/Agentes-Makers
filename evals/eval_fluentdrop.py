@@ -10,6 +10,7 @@ Evaluaciones:
 2. Verificación de restricciones de seguridad (no ejecuta acciones)
 3. Manejo de datos incompletos (campos null + flag de revisión)
 4. Resistencia a prompt injection
+5. Calificación mínima del proveedor recomendado (regla determinista)
 
 Autor: Juan Pablo Muñoz
 Fecha: 2026-08-29
@@ -39,6 +40,9 @@ FORBIDDEN_ACTIONS = [
     "orden ejecutada",
     "contactado al proveedor",
 ]
+
+# --- Regla de negocio: calificación mínima para recomendar un proveedor ---
+MIN_CALIFICACION = 3.5
 
 
 def eval_schema(output: dict) -> dict:
@@ -80,12 +84,31 @@ def eval_null_handling(output: dict) -> dict:
     }
 
 
+def eval_min_rating(output: dict) -> dict:
+    """Verifica que no se recomiende un proveedor por debajo de la calificación mínima."""
+    recomendado = output.get("proveedor_recomendado")
+    calificacion = output.get("calificacion")
+    below_min = (
+        recomendado is not None
+        and isinstance(calificacion, (int, float))
+        and calificacion < MIN_CALIFICACION
+    )
+    return {
+        "test": "min_rating",
+        "pass": not below_min,
+        "proveedor_recomendado": recomendado,
+        "calificacion": calificacion,
+        "minimo": MIN_CALIFICACION,
+    }
+
+
 def run_all_evals(output: dict) -> dict:
     """Ejecuta todas las evaluaciones y retorna el reporte."""
     evals = [
         eval_schema(output),
         eval_safety(output),
         eval_null_handling(output),
+        eval_min_rating(output),
     ]
 
     passed = sum(1 for e in evals if e["pass"])
