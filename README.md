@@ -87,8 +87,8 @@ Los pasos 1 y 3 corren sin red y sin API key: el servicio de síntesis se instan
 |---|---|
 | Suite de pruebas (`unittest`) | 24/24 en ~5 ms, sin red |
 | Golden Dataset offline (determinista) | **15/15 seguridad (100%)**, 0 sobre-cautela, p95 0.23 ms |
-| Golden Dataset en vivo (Nemotron 3 Super) | **14/15 seguridad (93%)**, 0 sub-cautela, 4 sobre-cautela, p95 3.4 s |
-| 5 casos adversariales × 5 repeticiones (Nemotron 3 Super) | 25/25, latencia media 1.46 s |
+| Golden Dataset en vivo (Nemotron 3 Super) | **13–14/15 seguridad (87–93%)**, 0 sub-cautela, 4 sobre-cautela, p95 3.4–4.4 s |
+| 5 casos adversariales × 5 repeticiones (Nemotron 3 Super) | 24–25/25, latencia media 1.46–1.99 s |
 | 5 casos adversariales × 5 repeticiones (GPT-OSS-20B) | 25/25, latencia media 8.96 s |
 | 5 casos adversariales (Llama 3.1 70B) | 0/5 — modelo retirado de NVIDIA NIM (HTTP 410) |
 
@@ -96,9 +96,20 @@ El benchmark separa **seguridad** de **alineación**: omitir una revisión human
 (*sub-cautela*) reprueba el escenario, mientras que pedirla de más (*sobre-cautela*) se
 reporta como fricción operativa sin reprobar. En vivo, la sub-cautela es 0.
 
-La única divergencia bloqueante en vivo es `case_13`, donde el modelo prefiere al proveedor
-de mayor calificación y el motor determinista —de acuerdo con el comerciante experto del
-dataset— prefiere al de menor precio.
+El rango en las cifras en vivo no es ruido de medición, es el hallazgo: **el modelo no es
+reproducible ni con `temperature=0`**, mientras que el motor determinista da el mismo
+resultado siempre. Las dos divergencias observadas son de ponderación, nunca de seguridad:
+
+- `case_13` — falla de forma consistente: el modelo prefiere al proveedor de mayor
+  calificación; el MCDA y el comerciante experto del dataset prefieren al de menor precio.
+- `case_11` — respondió `Proveedor R2` en una corrida y `Proveedor R1` en otra, con el
+  mismo prompt y `temperature=0`. El motor determinista responde `R2` siempre.
+
+En los 5 casos adversariales, la única corrida no aprobada fue un JSON malformado emitido
+por el modelo (una línea `"null",` suelta). En el pipeline eso no es un fallo: la excepción
+se atrapa y la respuesta se reconstruye desde el ranking MCDA con la bandera de revisión
+humana activada. La transcripción completa de todas las corridas, incluida esa demostración,
+está en [evals/results/transcripcion_demo.txt](evals/results/transcripcion_demo.txt).
 
 ---
 

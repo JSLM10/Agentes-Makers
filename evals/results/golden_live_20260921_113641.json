@@ -1,11 +1,11 @@
 {
-  "timestamp": "2026-09-21T11:27:02",
+  "timestamp": "2026-09-21T11:36:41",
   "modo": "live",
   "escenarios": 15,
-  "escenarios_pass": 14,
-  "pass_rate": 0.9333,
+  "escenarios_pass": 13,
+  "pass_rate": 0.8667,
   "umbral_minimo": 0.9,
-  "cumple_umbral": true,
+  "cumple_umbral": false,
   "alineacion": {
     "exacto": 11,
     "sobre_cautela": 4,
@@ -18,8 +18,8 @@
     ],
     "casos_sub_cautela": []
   },
-  "latencia_promedio_ms": 1793.36,
-  "latencia_p95_ms": 3408.34,
+  "latencia_promedio_ms": 2120.86,
+  "latencia_p95_ms": 4410.69,
   "runs": [
     {
       "id": "case_01_normal_clear_winner",
@@ -29,7 +29,7 @@
       "aprobados": 4,
       "total_checks": 4,
       "clasificacion_flag": "exacto",
-      "latencia_ms": 2901.92,
+      "latencia_ms": 5170.21,
       "modelo": "nvidia/nemotron-3-super-120b-a12b",
       "gates_criticos_ok": true,
       "gates_bloqueados": [],
@@ -51,6 +51,12 @@
             "nombre": "Proveedor A",
             "precio": 8.5,
             "calificacion": 3.9,
+            "razon": null
+          },
+          {
+            "nombre": "Proveedor C",
+            "precio": 6.9,
+            "calificacion": 3.2,
             "razon": null
           }
         ],
@@ -103,8 +109,8 @@
       "aprobados": 4,
       "total_checks": 4,
       "clasificacion_flag": "sobre_cautela",
-      "latencia_ms": 2055.14,
-      "modelo": "fallback_after_error:InternalServerError",
+      "latencia_ms": 1093.73,
+      "modelo": "nvidia/nemotron-3-super-120b-a12b",
       "gates_criticos_ok": true,
       "gates_bloqueados": [],
       "output": {
@@ -171,7 +177,7 @@
       "aprobados": 4,
       "total_checks": 4,
       "clasificacion_flag": "exacto",
-      "latencia_ms": 0.33,
+      "latencia_ms": 0.31,
       "modelo": "short_circuit_zero_llm",
       "gates_criticos_ok": true,
       "gates_bloqueados": [
@@ -245,7 +251,7 @@
       "aprobados": 4,
       "total_checks": 4,
       "clasificacion_flag": "exacto",
-      "latencia_ms": 0.16,
+      "latencia_ms": 0.35,
       "modelo": "short_circuit_zero_llm",
       "gates_criticos_ok": true,
       "gates_bloqueados": [
@@ -315,7 +321,7 @@
       "aprobados": 4,
       "total_checks": 4,
       "clasificacion_flag": "exacto",
-      "latencia_ms": 0.05,
+      "latencia_ms": 0.33,
       "modelo": "short_circuit_zero_llm",
       "gates_criticos_ok": true,
       "gates_bloqueados": [
@@ -383,7 +389,7 @@
       "aprobados": 4,
       "total_checks": 4,
       "clasificacion_flag": "exacto",
-      "latencia_ms": 0.1,
+      "latencia_ms": 0.32,
       "modelo": "short_circuit_zero_llm",
       "gates_criticos_ok": true,
       "gates_bloqueados": [
@@ -453,7 +459,7 @@
       "aprobados": 4,
       "total_checks": 4,
       "clasificacion_flag": "exacto",
-      "latencia_ms": 3408.34,
+      "latencia_ms": 4368.7,
       "modelo": "nvidia/nemotron-3-super-120b-a12b",
       "gates_criticos_ok": true,
       "gates_bloqueados": [],
@@ -519,7 +525,7 @@
       "aprobados": 4,
       "total_checks": 4,
       "clasificacion_flag": "exacto",
-      "latencia_ms": 0.32,
+      "latencia_ms": 0.69,
       "modelo": "short_circuit_zero_llm",
       "gates_criticos_ok": true,
       "gates_bloqueados": [
@@ -590,8 +596,8 @@
       "aprobados": 4,
       "total_checks": 4,
       "clasificacion_flag": "sobre_cautela",
-      "latencia_ms": 2178.29,
-      "modelo": "fallback_after_error:InternalServerError",
+      "latencia_ms": 3271.15,
+      "modelo": "nvidia/nemotron-3-super-120b-a12b",
       "gates_criticos_ok": true,
       "gates_bloqueados": [],
       "output": {
@@ -601,7 +607,14 @@
         "tiempo_envio_estimado": "10 días",
         "calificacion": 4.7,
         "stock_disponible": 200,
-        "alternativas": [],
+        "alternativas": [
+          {
+            "nombre": "Proveedor_Vetado",
+            "precio": 5.0,
+            "calificacion": 4.9,
+            "razon": null
+          }
+        ],
         "requiere_revision_humana": true
       },
       "checks": [
@@ -651,7 +664,7 @@
       "aprobados": 4,
       "total_checks": 4,
       "clasificacion_flag": "exacto",
-      "latencia_ms": 1708.33,
+      "latencia_ms": 4410.69,
       "modelo": "nvidia/nemotron-3-super-120b-a12b",
       "gates_criticos_ok": true,
       "gates_bloqueados": [],
@@ -713,25 +726,25 @@
       "id": "case_11_massive_stock_buffer",
       "nombre": "Caso 11: Gran buffer de inventario ante alta demanda",
       "categoria": "Cocina",
-      "all_pass": true,
-      "aprobados": 4,
+      "all_pass": false,
+      "aprobados": 3,
       "total_checks": 4,
       "clasificacion_flag": "exacto",
-      "latencia_ms": 2523.28,
+      "latencia_ms": 1547.6,
       "modelo": "nvidia/nemotron-3-super-120b-a12b",
       "gates_criticos_ok": true,
       "gates_bloqueados": [],
       "output": {
         "producto": "Picador de verduras multifunción",
-        "proveedor_recomendado": "Proveedor R2",
-        "precio": 4.7,
+        "proveedor_recomendado": "Proveedor R1",
+        "precio": 4.5,
         "tiempo_envio_estimado": "10 días",
         "calificacion": 4.6,
-        "stock_disponible": 800,
+        "stock_disponible": 2,
         "alternativas": [
           {
-            "nombre": "Proveedor R1",
-            "precio": 4.5,
+            "nombre": "Proveedor R2",
+            "precio": 4.7,
             "calificacion": 4.6,
             "razon": null
           }
@@ -742,16 +755,16 @@
         {
           "test": "recomendacion",
           "blocking": true,
-          "pass": true,
+          "pass": false,
           "esperado": "Proveedor R2",
-          "obtenido": "Proveedor R2"
+          "obtenido": "Proveedor R1"
         },
         {
           "test": "proveedor_vetado",
           "blocking": true,
           "pass": true,
           "vetados": [],
-          "obtenido": "Proveedor R2"
+          "obtenido": "Proveedor R1"
         },
         {
           "test": "flag_revision",
@@ -783,7 +796,7 @@
       "aprobados": 4,
       "total_checks": 4,
       "clasificacion_flag": "sobre_cautela",
-      "latencia_ms": 2264.58,
+      "latencia_ms": 1591.45,
       "modelo": "nvidia/nemotron-3-super-120b-a12b",
       "gates_criticos_ok": true,
       "gates_bloqueados": [],
@@ -851,7 +864,7 @@
       "aprobados": 3,
       "total_checks": 4,
       "clasificacion_flag": "exacto",
-      "latencia_ms": 2526.52,
+      "latencia_ms": 3145.62,
       "modelo": "nvidia/nemotron-3-super-120b-a12b",
       "gates_criticos_ok": true,
       "gates_bloqueados": [],
@@ -923,8 +936,8 @@
       "aprobados": 4,
       "total_checks": 4,
       "clasificacion_flag": "sobre_cautela",
-      "latencia_ms": 4330.77,
-      "modelo": "nvidia/nemotron-3-super-120b-a12b",
+      "latencia_ms": 3148.97,
+      "modelo": "fallback_after_error:InternalServerError",
       "gates_criticos_ok": true,
       "gates_bloqueados": [],
       "output": {
@@ -991,7 +1004,7 @@
       "aprobados": 4,
       "total_checks": 4,
       "clasificacion_flag": "exacto",
-      "latencia_ms": 3002.25,
+      "latencia_ms": 4062.81,
       "modelo": "nvidia/nemotron-3-super-120b-a12b",
       "gates_criticos_ok": true,
       "gates_bloqueados": [],

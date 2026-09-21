@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-21T11:28:08",
+  "timestamp": "2026-09-21T11:35:41",
   "modo": "offline_determinista",
   "escenarios": 15,
   "escenarios_pass": 15,
@@ -13,7 +13,7 @@
     "casos_sobre_cautela": [],
     "casos_sub_cautela": []
   },
-  "latencia_promedio_ms": 0.21,
+  "latencia_promedio_ms": 0.22,
   "latencia_p95_ms": 0.21,
   "runs": [
     {
@@ -24,7 +24,7 @@
       "aprobados": 4,
       "total_checks": 4,
       "clasificacion_flag": "exacto",
-      "latencia_ms": 1.75,
+      "latencia_ms": 1.95,
       "modelo": "deterministic_offline",
       "gates_criticos_ok": true,
       "gates_bloqueados": [],
@@ -246,7 +246,7 @@
       "aprobados": 4,
       "total_checks": 4,
       "clasificacion_flag": "exacto",
-      "latencia_ms": 0.07,
+      "latencia_ms": 0.08,
       "modelo": "short_circuit_zero_llm",
       "gates_criticos_ok": true,
       "gates_bloqueados": [
@@ -454,7 +454,7 @@
       "aprobados": 4,
       "total_checks": 4,
       "clasificacion_flag": "exacto",
-      "latencia_ms": 0.13,
+      "latencia_ms": 0.15,
       "modelo": "deterministic_offline",
       "gates_criticos_ok": true,
       "gates_bloqueados": [],
@@ -526,7 +526,7 @@
       "aprobados": 4,
       "total_checks": 4,
       "clasificacion_flag": "exacto",
-      "latencia_ms": 0.09,
+      "latencia_ms": 0.1,
       "modelo": "short_circuit_zero_llm",
       "gates_criticos_ok": true,
       "gates_bloqueados": [
@@ -858,7 +858,7 @@
       "aprobados": 4,
       "total_checks": 4,
       "clasificacion_flag": "exacto",
-      "latencia_ms": 0.11,
+      "latencia_ms": 0.12,
       "modelo": "deterministic_offline",
       "gates_criticos_ok": true,
       "gates_bloqueados": [],
@@ -998,7 +998,7 @@
       "aprobados": 4,
       "total_checks": 4,
       "clasificacion_flag": "exacto",
-      "latencia_ms": 0.11,
+      "latencia_ms": 0.09,
       "modelo": "deterministic_offline",
       "gates_criticos_ok": true,
       "gates_bloqueados": [],
