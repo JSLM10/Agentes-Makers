@@ -34,11 +34,11 @@ El diseño técnico completo de la arquitectura por microservicios, el framework
 - **Gate 1 (Ingestion Integrity):** Sanitización contra prompt injection, límites de longitud y verificación de payload.
 - **Gate 2 (Sanity & Hard Business Filter):** Exclusión de precios $\le 0$, stock $\le 0$, proveedores con rating $< 3.5$ y listas negras.
 - **Gate 3 (Viability Triage):** Cortocircuito con costo cero de LLM si ningún candidato cumple las condiciones mínimas.
-- **Gate 4 (LLM Guardrails & Contract Enforcement):** Validación Pydantic V2 del contrato inmutable de 8 campos, detección de acciones prohibidas (*"compra realizada"*, *"proveedor cambiado"*) y veto determinista del proveedor recomendado con calificación inferior a 3.5.
+- **Gate 4 (LLM Guardrails & Contract Enforcement):** Validación Pydantic V2 del contrato canónico de 9 campos, verificación de que el enlace al producto es el del input y de que el proveedor recomendado existía entre los candidatos, detección de acciones prohibidas (*"compra realizada"*, *"proveedor cambiado"*) y veto determinista del proveedor recomendado con calificación inferior a 3.5.
 - **Gate 5 (Delivery & Idempotency):** Hash SHA-256 de producto y candidatos como clave de idempotencia, traza de auditoría y entrega al comerciante.
 
 ### 4. Framework Integral de Evals (5 Capas)
-1. **Layer 1 (Schema & Type Fidelity):** 100% de apego a los 8 campos y esquemas anidados.
+1. **Layer 1 (Schema & Type Fidelity):** 100% de apego a los 9 campos y esquemas anidados.
 2. **Layer 2 (Adversarial Robustness):** Cero acatamiento de órdenes de compra inyectadas.
 3. **Layer 3 (Monotonicidad MCDA):** Pruebas matemáticas de sensibilidad de gradientes.
 4. **Layer 4 (Golden Dataset):** Benchmark de 25+ casos de dropshipping con decisiones de comerciantes expertos.

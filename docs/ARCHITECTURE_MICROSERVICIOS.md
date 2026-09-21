@@ -51,7 +51,7 @@ Usuario / Tienda / Agente 1
 ```
 
 ### Principio Rector: Asistencia Segura sin Acción Destructiva
-FluentDrop **nunca ejecuta compras automáticas, nunca altera el proveedor activo de la tienda por su cuenta y nunca contacta proveedores sin consentimiento**. El sistema es estrictamente consultivo y emite recomendaciones estructuradas en un contrato inmutable de 8 campos, transfiriendo la decisión final al comerciante humano.
+FluentDrop **nunca ejecuta compras automáticas, nunca altera el proveedor activo de la tienda por su cuenta y nunca contacta proveedores sin consentimiento**. El sistema es estrictamente consultivo y emite recomendaciones estructuradas en un contrato canónico de 9 campos, transfiriendo la decisión final al comerciante humano.
 
 ---
 
@@ -119,7 +119,7 @@ flowchart TB
 | **Gates Engine (G0–G3)** | Aduana de entrada: verificación pre-flight, integridad de payload, filtrado determinista de negocio y triaje de viabilidad. | Python, Pydantic, RegEx Guard | $\le 15 \text{ ms}$ |
 | **MCDA Scoring Engine** | Evaluación multicriterio puramente determinista. Asigna puntajes relativos según precio, días de envío, rating y stock. Genera el ranking base. | Python, NumPy / Funciones Matemáticas | $\le 20 \text{ ms}$ |
 | **LLM Synthesis Worker** | Generación de síntesis semántica, análisis de matices en reseñas de proveedores y balance de trade-offs. | NVIDIA NIM, Nemotron 3 Super 120B / GPT-OSS | $\le 1800 \text{ ms}$ |
-| **Guardrails & Contract Gate (G4)** | Validación estricta del contrato de 8 campos con Pydantic V2, detección de acciones prohibidas y veto a recomendaciones no calificadas. | Python, Pydantic V2, Schema Enforcer | $\le 30 \text{ ms}$ |
+| **Guardrails & Contract Gate (G4)** | Validación estricta del contrato de 9 campos con Pydantic V2, detección de acciones prohibidas, veto a recomendaciones no calificadas y veto de discrepancias contra el input (enlace y existencia del proveedor). | Python, Pydantic V2, Schema Enforcer | $\le 30 \text{ ms}$ |
 | **Delivery & Audit Service (G5)** | Control de idempotencia por hash SHA-256 de producto+candidatos, registro de trazas y despacho al canal del comerciante. | Python, Redis / SQLite Audit Log | $\le 40 \text{ ms}$ |
 
 ---
@@ -256,7 +256,7 @@ flowchart TD
   - Si hay $\ge 1$ candidato viable: se procede al cálculo del motor de scoring y a la síntesis del LLM.
 
 #### Gate 4: LLM Guardrails & Contract Enforcement
-- **Objetivo:** Garantizar que la salida del LLM cumpla con el contrato de producto estricto de 8 campos y las políticas de seguridad de datos.
+- **Objetivo:** Garantizar que la salida del LLM cumpla con el contrato de producto estricto de 9 campos y las políticas de seguridad de datos.
 - **Validaciones:**
   - Esquema estricto verificado mediante modelo Pydantic V2 (`producto`, `proveedor_recomendado`, `precio`, `tiempo_envio_estimado`, `calificacion`, `stock_disponible`, `alternativas`, `requiere_revision_humana`).
   - Validación profunda de `alternativas`: cada ítem debe ser un objeto con `{nombre, precio, calificacion}`.
@@ -323,7 +323,8 @@ flowchart TD
 ```
 
 ### 5.2 Esquema de Salida Canónico (`FluentDropOutput`)
-Contrato inmutable de 8 campos:
+Contrato canónico de 9 campos. El contrato tiene 9 campos, de los cuales el modelo produce 8: `url_producto` lo escribe el pipeline copiándolo del candidato ganador del input. Un enlace inventado no es una imprecisión, es un comerciante comprándole a otro proveedor, así que el enlace se copia en vez de inferirse.
+
 
 ```json
 {
@@ -338,7 +339,8 @@ Contrato inmutable de 8 campos:
     "calificacion",
     "stock_disponible",
     "alternativas",
-    "requiere_revision_humana"
+    "requiere_revision_humana",
+    "url_producto"
   ],
   "properties": {
     "producto": {
@@ -406,13 +408,13 @@ Para evaluar y gobernar continuamente el sistema, se implementa una pirámide de
                   ├──────────────────────────────┤
                   │ Layer 2: Adversarial/Inject  │  Jailbreaks, Acciones Prohibidas
                   ├──────────────────────────────┤
-                  │ Layer 1: Schema & Pydantic   │  Contrato 8 campos, Tipos
+                  │ Layer 1: Schema & Pydantic   │  Contrato 9 campos, Tipos
                   └──────────────────────────────┘
 ```
 
 | Capa de Eval | Métrica de Aceptación | Frecuencia | Mecanismo de Verificación |
 |---|---|---|---|
-| **Layer 1: Contract & Type Fidelity** | 100% cumplimiento de los 8 campos canónicos y tipos Pydantic. | En cada build / pre-commit | `eval_schema()` + Pydantic V2 model validation |
+| **Layer 1: Contract & Type Fidelity** | 100% cumplimiento de los 9 campos canónicos y tipos Pydantic. | En cada build / pre-commit | `eval_schema()` + Pydantic V2 model validation |
 | **Layer 2: Safety & Jailbreak Robustness** | 0% ejecuciones de compras o cambios de proveedor; 100% detección de prompt injection. | En cada build y nightly | Inyección de casos adversariales (`eval_safety`, `prompt_injection`) |
 | **Layer 3: Monotonicidad & Consistencia MCDA** | La puntuación debe ser estrictamente monótona decreciente ante aumentos de precio y aumentos de tiempo de envío. | Pruebas unitarias matemáticas | Tests sintéticos de gradiente numérico |
 | **Layer 4: Golden Dataset Benchmark** | Coincidencia $\ge 90\%$ entre la recomendación del sistema y la decisión de comerciantes expertos en los 15 escenarios curados. El scoring separa checks bloqueantes (contrato, proveedor vetado, recomendación, sub-cautela) de la métrica informativa de sobre-cautela. | Semanal o ante cambio de prompt/modelo | `python evals/run_golden_dataset.py` (offline) o `--live` |
@@ -444,7 +446,7 @@ flowchart TD
 
 1. **Reintento Inmediato con Backoff:** Ante JSON truncado o caracteres extraños, se ejecuta 1 reintento con prompt de auto-corrección estricta.
 2. **Fallback a Modelo Alternativo:** Si NVIDIA NIM devuelve error 410 o 503 (como ocurrió con LLaMA 3.1 70B), el orquestador conmuta automáticamente a `openai/gpt-oss-20b` o endpoint configurado en `.env`.
-3. **Fallback Determinista Sintético (Zero-Failure Guarantee):** Si todos los servicios LLM fallan, el **MCDA Scoring Engine** asume el control: selecciona el proveedor con mayor puntaje matemático que supere $3.5$, construye el payload JSON respetando el contrato de 8 campos y marca `requiere_revision_humana = True` indicando causa técnica.
+3. **Fallback Determinista Sintético (Zero-Failure Guarantee):** Si todos los servicios LLM fallan, el **MCDA Scoring Engine** asume el control: selecciona el proveedor con mayor puntaje matemático que supere $3.5$, construye el payload JSON respetando el contrato de 9 campos y marca `requiere_revision_humana = True` indicando causa técnica.
 
 ---
 

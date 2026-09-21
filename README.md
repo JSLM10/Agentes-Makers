@@ -26,7 +26,7 @@ Usuario / Tienda → Ingesta → G0 (Preflight) → G1 (Integridad) → G2 (Filt
 
 ---
 
-### Los 4 Pilares del Sistema
+### Los 5 Pilares del Sistema
 
 1. **Arquitectura de Microservicios:** Módulos desacoplados en `src/` con Ingesta y normalización, Motor de Gates (`src/gates/`), Motor de Decisión Multicriterio (`src/scoring/`), Síntesis LLM desacoplada (`src/services/`) y Orquestador de Pipeline (`src/pipeline_orchestrator.py`).
 2. **Lógica Matemática Determinista (MCDA):** Fórmulas continuas de normalización para ahorro relativo de precio, penalización no lineal de envíos, escalamiento de calificación en $[3.5, 5.0]$, buffer logarítmico de inventario y penalización de $60\%$ ante reseñas con alertas de fraude o roturas.
@@ -35,9 +35,10 @@ Usuario / Tienda → Ingesta → G0 (Preflight) → G1 (Integridad) → G2 (Filt
    - **Gate 1 (Ingestion Integrity):** Detección y bloqueo de prompt injection o payloads corruptos.
    - **Gate 2 (Sanity & Hard Business Filter):** Exclusión de precios $\le 0$, stock $\le 0$, rating $< 3.5$ y listas negras.
    - **Gate 3 (Viability Triage):** Cortocircuito con coste cero de LLM si ningún proveedor cumple las condiciones mínimas.
-   - **Gate 4 (LLM Guardrails & Contract):** Validación estricta con Pydantic V2 del contrato inmutable de 8 campos, veto de acciones prohibidas (*"compra realizada"*, *"proveedor cambiado"*) y veto determinista del proveedor recomendado si su calificación es inferior a 3.5.
+   - **Gate 4 (LLM Guardrails & Contract):** Validación estricta con Pydantic V2 del contrato canónico de 9 campos, veto de acciones prohibidas (*"compra realizada"*, *"proveedor cambiado"*), veto del proveedor recomendado si su calificación es inferior a 3.5, y **veto determinista de discrepancias contra el input**: si el enlace entregado no es el del proveedor recomendado, o si ese proveedor no estaba entre los candidatos, la salida se repara y pasa a revisión humana.
    - **Gate 5 (Delivery & Idempotency):** Hash de firma SHA-256 sobre producto y candidatos, que sirve de clave de idempotencia y de traza de auditoría para la entrega.
-4. **Framework de Evals (5 Capas):** Pruebas de contrato y esquema, robustez adversarial, monotonicidad matemática, benchmark con dataset patrón curado (`evals/data/golden_dataset.json`), y SLAs de latencia y estabilidad.
+4. **Enlace al Producto sin Alucinación:** El contrato incluye `url_producto`, el único campo que **el modelo nunca produce**. Lo escribe el pipeline copiándolo del candidato ganador del input. La razón es concreta: un enlace inventado no es una respuesta imprecisa, es un comerciante comprándole al proveedor equivocado. El enlace es un dato del catálogo, así que se copia en vez de inferirse, y Gate 4 verifica que el entregado sea exactamente el del input.
+5. **Framework de Evals (5 Capas):** Pruebas de contrato y esquema, robustez adversarial, monotonicidad matemática, benchmark con dataset patrón curado (`evals/data/golden_dataset.json`), y SLAs de latencia y estabilidad.
 
 ---
 
@@ -59,7 +60,7 @@ Usuario / Tienda → Ingesta → G0 (Preflight) → G1 (Integridad) → G2 (Filt
 # 0. Instalar dependencias
 pip install -r requirements.txt
 
-# 1. Suite de pruebas unitarias, matemáticas y de integración (24 tests, herméticas)
+# 1. Suite de pruebas unitarias, matemáticas y de integración (36 tests, herméticas)
 python -m unittest discover -s tests -p "test_*.py"
 
 # 2. Contrato offline con outputs simulados (no llama al modelo)
@@ -85,9 +86,9 @@ Los pasos 1 y 3 corren sin red y sin API key: el servicio de síntesis se instan
 
 | Evaluación | Resultado |
 |---|---|
-| Suite de pruebas (`unittest`) | 24/24 en ~5 ms, sin red |
+| Suite de pruebas (`unittest`) | 36/36 en ~5 ms, sin red |
 | Golden Dataset offline (determinista) | **15/15 seguridad (100%)**, 0 sobre-cautela, p95 0.23 ms |
-| Golden Dataset en vivo (Nemotron 3 Super) | **13–14/15 seguridad (87–93%)**, 0 sub-cautela, 4 sobre-cautela, p95 3.4–4.4 s |
+| Golden Dataset en vivo (Nemotron 3 Super) | **13–15/15 seguridad (87–100%)** según la corrida, 0 sub-cautela, 4–6 sobre-cautela, p95 3.4–4.5 s |
 | 5 casos adversariales × 5 repeticiones (Nemotron 3 Super) | 24–25/25, latencia media 1.46–1.99 s |
 | 5 casos adversariales × 5 repeticiones (GPT-OSS-20B) | 25/25, latencia media 8.96 s |
 | 5 casos adversariales (Llama 3.1 70B) | 0/5 — modelo retirado de NVIDIA NIM (HTTP 410) |
@@ -100,10 +101,15 @@ El rango en las cifras en vivo no es ruido de medición, es el hallazgo: **el mo
 reproducible ni con `temperature=0`**, mientras que el motor determinista da el mismo
 resultado siempre. Las dos divergencias observadas son de ponderación, nunca de seguridad:
 
-- `case_13` — falla de forma consistente: el modelo prefiere al proveedor de mayor
-  calificación; el MCDA y el comerciante experto del dataset prefieren al de menor precio.
+- `case_13` — el modelo respondió `Proveedor G3` en dos corridas y `Proveedor G1` en una
+  tercera. Prefiere al proveedor de mayor calificación; el MCDA y el comerciante experto
+  del dataset prefieren al de menor precio.
 - `case_11` — respondió `Proveedor R2` en una corrida y `Proveedor R1` en otra, con el
-  mismo prompt y `temperature=0`. El motor determinista responde `R2` siempre.
+  mismo prompt y `temperature=0`.
+
+En las tres corridas, el motor determinista respondió `G1` y `R2` sin excepción. **Por eso
+el rango en vivo va de 87% a 100% y el offline es 100% siempre**: no es que un modo sea
+mejor, es que sólo uno es reproducible. Ninguna de las divergencias fue de seguridad.
 
 En los 5 casos adversariales, la única corrida no aprobada fue un JSON malformado emitido
 por el modelo (una línea `"null",` suelta). En el pipeline eso no es un fallo: la excepción
@@ -164,7 +170,7 @@ está en [evals/results/transcripcion_demo.txt](evals/results/transcripcion_demo
 ### Stack Técnico
 
 - **LLM**: NVIDIA Nemotron 3 Super 120B vía NVIDIA NIM, configurable con `NVIDIA_MODEL` (fallback a GPT-OSS-20B y motor sintético).
-- **Validación & Esquemas**: Pydantic V2 para validación profunda y cumplimiento estricto del contrato inmutable de 8 campos.
+- **Validación & Esquemas**: Pydantic V2 para validación profunda y cumplimiento estricto del contrato canónico de 9 campos, de los cuales el modelo produce 8.
 - **Scoring & Lógica**: Algoritmo determinista multicriterio (MCDA) con análisis no lineal.
 - **Evaluación**: Framework de 5 capas (esquemas, robustez adversarial, monotonicidad matemática, golden dataset y estabilidad).
 - **Lenguaje**: Python 3.10+

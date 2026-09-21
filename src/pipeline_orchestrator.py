@@ -63,7 +63,12 @@ def parse_raw_text_input(raw_text: str) -> ProductInput:
         cand_match = re.search(r"(?:^-\s*|^)(Proveedor\s+[A-Za-z0-9_]+)\s*:\s*(.*)", line_clean, re.IGNORECASE)
         if cand_match:
             name = cand_match.group(1).strip()
-            # Ignorar si es el proveedor actual
+            # La etiqueta "Proveedor actual:" matchea el mismo patrón que un
+            # candidato. Sin este filtro, el proveedor vigente entra al ranking
+            # como si fuera una opción nueva y el agente puede terminar
+            # recomendando cambiarse al proveedor que ya se tiene.
+            if name.strip().lower() == "proveedor actual":
+                continue
             if current_supplier and name.lower() == current_supplier.nombre.lower():
                 continue
             
@@ -86,6 +91,10 @@ def parse_raw_text_input(raw_text: str) -> ProductInput:
             stk_m = re.search(r"stock\s*(\d+)", body, re.IGNORECASE)
             stock = int(stk_m.group(1)) if stk_m else None
             
+            # Enlace al producto: cualquier URL presente en la linea, sin importar la etiqueta.
+            url_m = re.search(r"https?://\S+", body)
+            url = url_m.group(0).rstrip(".,;)") if url_m else None
+            
             # Reseñas
             res_m = re.search(r"reseñas\s*(.*)", body, re.IGNORECASE)
             resenas = res_m.group(1).strip() if res_m else body
@@ -98,6 +107,7 @@ def parse_raw_text_input(raw_text: str) -> ProductInput:
                     calificacion=calif,
                     stock_disponible=stock,
                     resenas=resenas,
+                    url=url,
                 )
             )
             
@@ -107,6 +117,36 @@ def parse_raw_text_input(raw_text: str) -> ProductInput:
         proveedor_actual=current_supplier,
         proveedores_candidatos=candidates,
     )
+
+
+def attach_product_urls(
+    output_dict: Dict[str, Any],
+    candidates: List[SupplierCandidate],
+) -> Dict[str, Any]:
+    """
+    Escribe el enlace al producto copiándolo del candidato del input.
+
+    Es el único campo del contrato que no proviene del modelo. La razón es
+    concreta: un enlace inventado no es una respuesta imprecisa, es un
+    comerciante comprándole a otro proveedor. El enlace es un dato del
+    catálogo, así que se copia; no se infiere.
+
+    Si el modelo escribió el campo por su cuenta, no se sobrescribe aquí: se
+    deja para que Gate 4 detecte la discrepancia, la registre en la auditoría
+    y la repare. Así la alucinación queda en la traza en vez de desaparecer.
+    """
+    urls = {c.nombre.strip().lower(): c.url for c in candidates}
+
+    recomendado = output_dict.get("proveedor_recomendado")
+    if "url_producto" not in output_dict:
+        clave = recomendado.strip().lower() if recomendado else None
+        output_dict["url_producto"] = urls.get(clave) if clave else None
+
+    for alternativa in output_dict.get("alternativas") or []:
+        if isinstance(alternativa, dict) and alternativa.get("nombre") and "url" not in alternativa:
+            alternativa["url"] = urls.get(alternativa["nombre"].strip().lower())
+
+    return output_dict
 
 
 class FluentDropPipeline:
@@ -185,6 +225,7 @@ class FluentDropPipeline:
                 "stock_disponible": None,
                 "alternativas": [],
                 "requiere_revision_humana": True,
+                "url_producto": None,
             }
             model_name = "short_circuit_zero_llm"
         else:
@@ -198,6 +239,9 @@ class FluentDropPipeline:
         # Si el Gate 1 detectó inyección o anomalía, forzar flag de revisión humana
         if requires_review_g1:
             output_dict["requiere_revision_humana"] = True
+
+        # Enlace al producto: se copia del candidato del input, nunca lo escribe el modelo
+        output_dict = attach_product_urls(output_dict, candidates)
 
         # --- GATE 4: LLM Guardrail & Contract ---
         g4, validated_output = self.gates.run_guardrails(output_dict, scored_candidates)

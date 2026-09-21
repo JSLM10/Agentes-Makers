@@ -101,6 +101,7 @@ class TestGatesEngine(unittest.TestCase):
             "stock_disponible": 340,
             "alternativas": [{"nombre": "Proveedor D", "precio": 7.80, "calificacion": 4.8}],
             "requiere_revision_humana": False,
+            "url_producto": "https://es.aliexpress.com/item/1005006123456.html",
         }
         res, output = evaluate_gate4_llm_guardrail(valid_dict)
         self.assertTrue(res.passed)

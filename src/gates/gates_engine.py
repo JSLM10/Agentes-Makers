@@ -214,7 +214,7 @@ def evaluate_gate4_llm_guardrail(
 ) -> Tuple[GateResult, FluentDropOutput]:
     """
     Gate 4: Aduana estricta para la salida de la IA.
-    1. Valida esquema de 8 campos exactos.
+    1. Valida esquema de 9 campos exactos.
     2. Detecta acciones prohibidas ('compra realizada', 'proveedor cambiado').
     3. Verifica que el recomendado no tenga calificación < min_rating.
     4. Garantiza coherencia con Pydantic V2.
@@ -242,16 +242,52 @@ def evaluate_gate4_llm_guardrail(
     if recom is not None and isinstance(calif, (int, float)) and calif < min_rating:
         violations.append(f"Proveedor '{recom}' recomendado con calificación {calif} < {min_rating}")
 
-    # 4. Construir y validar con Pydantic
+    # 4. Veto determinista de discrepancias contra el input.
+    # Requiere el ranking MCDA para saber qué proveedores existían realmente y
+    # cuál era su enlace. Sin ranking no se puede verificar, y se omite.
+    url_autoritativa = None
+    if scored_candidates is not None:
+        urls_input = {
+            sc.candidate.nombre.strip().lower(): sc.candidate.url
+            for sc in scored_candidates
+        }
+        clave = recom.strip().lower() if recom else None
+
+        if recom is not None and clave not in urls_input:
+            # El modelo recomendó un proveedor que nunca estuvo en el input.
+            violations.append(f"Proveedor '{recom}' no estaba entre los candidatos del input")
+        else:
+            url_autoritativa = urls_input.get(clave) if clave else None
+            url_declarada = output_dict.get("url_producto")
+            if url_declarada != url_autoritativa:
+                violations.append(
+                    f"URL del producto no coincide con la del input para '{recom}': "
+                    f"declarada={url_declarada!r} autoritativa={url_autoritativa!r}"
+                )
+
+    # 5. Construir y validar con Pydantic
     repaired_dict = dict(output_dict)
-    
-    # Si hay violaciones de calificación o acción prohibida, vetar la recomendación y forzar revisión humana
-    if any("calificación" in v.lower() for v in violations) or any("prohibida" in v.lower() for v in violations):
+
+    # Vetos que tumban la recomendación completa: calificación bajo el mínimo,
+    # acción prohibida o proveedor inexistente en el input.
+    veto_recomendacion = (
+        any("calificación" in v.lower() for v in violations)
+        or any("prohibida" in v.lower() for v in violations)
+        or any("no estaba entre los candidatos" in v for v in violations)
+    )
+    if veto_recomendacion:
         repaired_dict["proveedor_recomendado"] = None
         repaired_dict["precio"] = None
         repaired_dict["tiempo_envio_estimado"] = None
         repaired_dict["calificacion"] = None
         repaired_dict["stock_disponible"] = None
+        repaired_dict["url_producto"] = None
+        repaired_dict["requiere_revision_humana"] = True
+
+    # Enlace inventado: la recomendación puede seguir en pie, pero el enlace se
+    # reemplaza por el del input y el caso pasa a revisión humana.
+    elif any("URL del producto no coincide" in v for v in violations):
+        repaired_dict["url_producto"] = url_autoritativa
         repaired_dict["requiere_revision_humana"] = True
 
     # Asegurar campos requeridos presentes

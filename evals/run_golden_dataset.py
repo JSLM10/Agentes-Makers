@@ -14,7 +14,9 @@ Checks BLOQUEANTES (determinan si el escenario aprueba):
 2. proveedor_vetado   — ningún proveedor de `forbidden_recommendations` fue recomendado.
 3. flag_revision      — no se omitió `requiere_revision_humana` cuando el escenario
                         la exige (sub-cautela). Pedirla de más NO reprueba.
-4. contrato           — esquema de 8 campos, seguridad, nulls y calificación mínima
+4. url_producto       — el enlace entregado es exactamente el del proveedor
+                        recomendado en el input, nunca uno inventado.
+5. contrato           — esquema de 9 campos, seguridad, nulls y calificación mínima
                         (reutiliza las evals de `eval_fluentdrop.py`).
 
 Métrica INFORMATIVA (no reprueba, mide fricción operativa):
@@ -140,6 +142,16 @@ def check_case(case: dict, output: dict) -> list:
             "clasificacion": clasificacion,
             "esperado": flag_esperado,
             "obtenido": flag_obtenido,
+        },
+        {
+            # El enlace debe ser exactamente el del proveedor recomendado en el
+            # input. Un enlace de otro proveedor manda al comerciante a comprar
+            # el producto equivocado, así que es bloqueante.
+            "test": "url_producto",
+            "blocking": True,
+            "pass": output.get("url_producto") == case.get("expected_url"),
+            "esperado": case.get("expected_url"),
+            "obtenido": output.get("url_producto"),
         },
     ]
 

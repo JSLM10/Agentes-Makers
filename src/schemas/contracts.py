@@ -2,15 +2,18 @@
 contracts.py — Modelos canónicos y contratos de datos para FluentDrop (Pydantic V2)
 ===================================================================================
 
-Define los contratos de entrada, salida inmutable de 8 campos, estructuras intermedias
+Define los contratos de entrada, la salida canónica de 9 campos, estructuras intermedias
 de evaluación y resultados de Gates.
+
+De los 9 campos del contrato, el modelo produce 8: `url_producto` lo escribe el pipeline
+copiándolo del candidato ganador del input, para que no pueda ser alucinado.
 """
 
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
-# --- Contrato de producto (campos requeridos del output de 8 campos) ---
+# --- Contrato de producto entregado al comerciante (9 campos) ---
 REQUIRED_FIELDS = {
     "producto",
     "proveedor_recomendado",
@@ -20,6 +23,25 @@ REQUIRED_FIELDS = {
     "stock_disponible",
     "alternativas",
     "requiere_revision_humana",
+    "url_producto",
+}
+
+# --- Campos que el LLM debe producir (8) ---
+# `url_producto` queda deliberadamente fuera: el enlace lo copia el pipeline
+# desde el candidato ganador del input, de modo que el modelo no pueda
+# inventarlo. Un enlace alucinado manda al comerciante a comprar otro producto.
+LLM_OUTPUT_FIELDS = REQUIRED_FIELDS - {"url_producto"}
+
+# --- Campos cuya ausencia obliga a revisión humana ---
+# `url_producto` y `alternativas` quedan fuera a propósito: un enlace faltante
+# incomoda al comerciante, pero no compromete la decisión. Exigir revisión por
+# eso convertiría la bandera en ruido y dejaría de señalar lo que sí importa.
+CRITICAL_NULL_FIELDS = {
+    "proveedor_recomendado",
+    "precio",
+    "tiempo_envio_estimado",
+    "calificacion",
+    "stock_disponible",
 }
 
 # --- Restricciones de seguridad: Acciones prohibidas ---
@@ -47,6 +69,7 @@ class SupplierCandidate(BaseModel):
     calificacion: Optional[float] = Field(None, ge=0.0, le=5.0, description="Calificación 0 a 5")
     stock_disponible: Optional[int] = Field(None, ge=0, description="Unidades físicas en stock")
     resenas: Optional[str] = Field(None, description="Reseñas o feedback cualitativo de compradores")
+    url: Optional[str] = Field(None, description="Enlace al producto en el catálogo del proveedor, tal como vino en el input")
     es_viable: bool = Field(True, description="Indicador si sobrevive a los filtros duros de negocio")
     motivo_exclusion: Optional[str] = Field(None, description="Razón de descarte si es inviable")
 
@@ -74,10 +97,11 @@ class AlternativeSupplier(BaseModel):
     precio: Optional[float] = Field(None, ge=0.0)
     calificacion: Optional[float] = Field(None, ge=0.0, le=5.0)
     razon: Optional[str] = Field(None, description="Ventaja o razón de posicionamiento")
+    url: Optional[str] = Field(None, description="Enlace al producto de esta alternativa, copiado del input")
 
 
 class FluentDropOutput(BaseModel):
-    """Contrato inmutable de 8 campos generado para el usuario o sistema consumidor."""
+    """Contrato canónico de 9 campos entregado al comerciante o sistema consumidor."""
     producto: Optional[str] = Field(None, description="Producto evaluado")
     proveedor_recomendado: Optional[str] = Field(None, description="Proveedor sugerido; null si ninguno califica")
     precio: Optional[float] = Field(None, ge=0.0, description="Precio unitario en USD del recomendado")
@@ -86,18 +110,16 @@ class FluentDropOutput(BaseModel):
     stock_disponible: Optional[int] = Field(None, ge=0, description="Stock disponible")
     alternativas: List[AlternativeSupplier] = Field(default_factory=list, description="Otros proveedores evaluados")
     requiere_revision_humana: bool = Field(False, description="Flag de alerta o ambigüedad")
+    url_producto: Optional[str] = Field(
+        None,
+        description="Enlace al producto del proveedor recomendado. Lo escribe el pipeline "
+                    "copiándolo del input, nunca el modelo.",
+    )
 
     @model_validator(mode="after")
     def check_null_coherence(self) -> "FluentDropOutput":
         """Si falta el proveedor recomendado o campos clave son null, debe requerir revisión humana."""
-        critical_fields = [
-            self.proveedor_recomendado,
-            self.precio,
-            self.tiempo_envio_estimado,
-            self.calificacion,
-            self.stock_disponible,
-        ]
-        if any(f is None for f in critical_fields):
+        if any(getattr(self, campo) is None for campo in CRITICAL_NULL_FIELDS):
             self.requiere_revision_humana = True
         return self
 

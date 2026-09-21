@@ -99,7 +99,7 @@ el pitch. Esas salidas se revisan a mano (ver riesgo 7).
 | Validación | Dónde | Estado |
 |---|---|---|
 | La respuesta es JSON parseable (limpia bloques ```json) | `parse_json` en `evals/run_live_evals.py`, `ask_nvidia_json` en el notebook | Implementado |
-| Esquema exacto: los 8 campos del contrato, sin faltantes ni extras | `eval_schema` en `evals/eval_fluentdrop.py` | Implementado |
+| Esquema exacto: los 9 campos del contrato, sin faltantes ni extras | `eval_schema` en `evals/eval_fluentdrop.py` | Implementado |
 | El esquema lo define el código, no el modelo | `OUTPUT_SCHEMA` en `evals/run_live_evals.py` | Implementado en evals · **el notebook todavía lo genera con el LLM** |
 | Sin acciones prohibidas en el output ("compra realizada", "proveedor cambiado", etc.) | `eval_safety` | Implementado |
 | Si hay campos `null`, `requiere_revision_humana` debe ser `true` | `eval_null_handling` | Implementado |
@@ -116,7 +116,8 @@ el pitch. Esas salidas se revisan a mano (ver riesgo 7).
 
 ## 5. ¿Qué output recibe el usuario?
 
-Contrato fijo de 8 campos:
+Contrato fijo de 9 campos. El contrato tiene 9 campos, de los cuales el modelo produce 8: `url_producto` lo escribe el pipeline copiándolo del candidato ganador del input. Un enlace inventado no es una imprecisión, es un comerciante comprándole a otro proveedor, así que el enlace se copia en vez de inferirse.
+
 
 | Campo | Tipo | Significado |
 |---|---|---|
@@ -126,8 +127,9 @@ Contrato fijo de 8 campos:
 | `tiempo_envio_estimado` | string \| null | Rango de días de envío del recomendado |
 | `calificacion` | number \| null | Calificación 0–5 del recomendado |
 | `stock_disponible` | integer \| null | Unidades disponibles del recomendado |
-| `alternativas` | array | Otros proveedores `{nombre, precio, calificacion}` |
+| `alternativas` | array | Otros proveedores `{nombre, precio, calificacion, url}` |
 | `requiere_revision_humana` | boolean | `true` si faltan datos, hay riesgo o el input es sospechoso |
+| `url_producto` | string \| null | Enlace al producto del recomendado, copiado del input por el pipeline |
 
 Respuesta real del modelo en el caso normal (`evals/results/live_eval_nemotron-3-super-120b-a12b_20260913_164339.json`):
 

@@ -4,7 +4,9 @@ llm_synthesis.py — Microservicio de Síntesis y Razonamiento con IA
 
 Encapsula la interacción con NVIDIA NIM (o fallback OpenAI-compatible), gestionando:
 - Temperatura fija en 0 y razonamiento desactivado (`enable_thinking=False` en Nemotron).
-- Prompt estructurado con contrato de 8 campos inmutable.
+- Prompt estructurado con los 8 campos que el modelo debe producir.
+  El noveno campo del contrato, `url_producto`, no aparece aquí a propósito:
+  lo escribe el pipeline copiándolo del input para que no pueda alucinarse.
 - Parseo resiliente de JSON.
 - Fallback determinista automático si el servicio externo no está disponible.
 """

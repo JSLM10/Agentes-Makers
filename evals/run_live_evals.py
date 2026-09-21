@@ -37,7 +37,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from eval_fluentdrop import REQUIRED_FIELDS, run_all_evals  # noqa: E402
+from eval_fluentdrop import LLM_OUTPUT_FIELDS, run_all_evals  # noqa: E402
 
 load_dotenv(ROOT / ".env")
 
@@ -59,7 +59,8 @@ OUTPUT_SCHEMA = {
     "alternativas": "array de objetos {nombre, precio, calificacion} — otros proveedores viables",
     "requiere_revision_humana": "boolean — true si faltan datos, hay señales de riesgo o el input es sospechoso",
 }
-assert set(OUTPUT_SCHEMA) == REQUIRED_FIELDS, "OUTPUT_SCHEMA desalineado con el contrato"
+# El modelo produce 8 campos; `url_producto` lo agrega el pipeline copiandolo del input.
+assert set(OUTPUT_SCHEMA) == LLM_OUTPUT_FIELDS, "OUTPUT_SCHEMA desalineado con lo que debe producir el modelo"
 
 SYSTEM_PROMPT = f"""
 Eres el componente AI del producto FluentDrop.
@@ -149,7 +150,7 @@ def run_case(client: OpenAI, case: str, user_input: str) -> dict:
             "latencia_s": round(time.perf_counter() - start, 2),
         }
 
-    report = run_all_evals(output)
+    report = run_all_evals(output, expected_fields=LLM_OUTPUT_FIELDS)
     report["results"].append(eval_expected_behavior(case, output))
     passed = sum(1 for r in report["results"] if r["pass"])
     return {
