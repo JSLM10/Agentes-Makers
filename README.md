@@ -60,6 +60,11 @@ Usuario / Tienda → Ingesta → G0 (Preflight) → G1 (Integridad) → G2 (Filt
 # 0. Instalar dependencias
 pip install -r requirements.txt
 
+# Correr un caso y ver la traza de los 6 Gates y el contrato de salida
+python demo.py                    # caso de ejemplo, contra el modelo real
+python demo.py --offline          # sin red, motor determinista
+python demo.py --archivo caso.txt # un caso propio
+
 # 1. Suite de pruebas unitarias, matemáticas y de integración (36 tests, herméticas)
 python -m unittest discover -s tests -p "test_*.py"
 
@@ -127,6 +132,7 @@ está en [evals/results/transcripcion_demo.txt](evals/results/transcripcion_demo
 ├── .gitignore                                   # Protege .env y __pycache__
 ├── .env                                         # NVIDIA_API_KEY / NVIDIA_MODEL (NO se sube)
 ├── requirements.txt                             # Dependencias de ejecución
+├── demo.py                                      # Corre un caso y muestra Gates + contrato
 ├── Sesion 8 - Use case - FluentDrop.ipynb       # Notebook principal del agente
 ├── docs/
 │   ├── ARCHITECTURE_MICROSERVICIOS.md          # Especificación técnica maestra completa
