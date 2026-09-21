@@ -1,0 +1,16 @@
+# FluentDrop — dependencias de ejecución
+# Instalar con: pip install -r requirements.txt
+# Probado con Python 3.10 a 3.14
+
+# Cliente OpenAI-compatible usado contra el endpoint de NVIDIA NIM
+openai>=1.40,<3
+
+# Validación del contrato inmutable de 8 campos (Pydantic V2, obligatorio)
+pydantic>=2.5,<3
+
+# Carga de NVIDIA_API_KEY / NVIDIA_MODEL desde .env
+python-dotenv>=1.0,<2
+
+# Nota: la suite de tests (python -m unittest discover -s tests) y el benchmark
+# offline del golden dataset corren sin red ni API key gracias al fallback
+# determinista; openai y python-dotenv solo hacen falta para las evals en vivo.
