@@ -17,7 +17,11 @@ Fecha: 2026-08-29
 """
 
 import json
+import sys
 from datetime import datetime
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
 # --- Contrato de producto (campos requeridos del output) ---
