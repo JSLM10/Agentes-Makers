@@ -27,6 +27,7 @@ Autor: Juan Pablo Muñoz
 import argparse
 import json
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -64,7 +65,6 @@ def main() -> None:
         entrada = CASO_EJEMPLO
 
     servicio = LLMSynthesisService(offline=True) if args.offline else LLMSynthesisService()
-    reporte = FluentDropPipeline(llm_service=servicio).run(entrada)
 
     ancho = 78
     print("=" * ancho)
@@ -74,12 +74,23 @@ def main() -> None:
 
     print()
     print("=" * ancho)
-    print(f"GATES   ejecucion {reporte.execution_id}   {reporte.latency_ms} ms   motor: {reporte.model_used}")
+    print("GATES  (en vivo, a medida que cada aduana resuelve)")
     print("=" * ancho)
-    for g in reporte.gates_evaluated:
-        marca = "OK  " if g.passed else "STOP"
-        print(f"  [{marca}] {g.gate_id}  {g.gate_name}")
-        print(f"          {g.reason}")
+
+    inicio = time.perf_counter()
+
+    def mostrar_gate(gate) -> None:
+        """Imprime cada gate apenas termina, sin esperar al resto del pipeline."""
+        transcurrido = (time.perf_counter() - inicio) * 1000.0
+        marca = "OK  " if gate.passed else "STOP"
+        print(f"  [{marca}] {gate.gate_id}  {gate.gate_name}   (+{transcurrido:.1f} ms)")
+        print(f"          {gate.reason}")
+        sys.stdout.flush()
+
+    reporte = FluentDropPipeline(llm_service=servicio).run(entrada, on_gate=mostrar_gate)
+
+    print()
+    print(f"  ejecucion {reporte.execution_id}   total {reporte.latency_ms} ms   motor: {reporte.model_used}")
 
     salida = reporte.output.model_dump()
     print()

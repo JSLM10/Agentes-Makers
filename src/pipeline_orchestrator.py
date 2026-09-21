@@ -11,7 +11,7 @@ import json
 import time
 import uuid
 from datetime import datetime
-from typing import Dict, Any, Optional, List, Tuple, Union
+from typing import Callable, Dict, Any, Optional, List, Tuple, Union
 
 from .schemas.contracts import (
     ProductInput,
@@ -161,14 +161,29 @@ class FluentDropPipeline:
         self.scoring = scoring_engine or MCDAScoringEngine()
         self.llm = llm_service or LLMSynthesisService()
 
-    def run(self, input_data: Union[str, ProductInput, Dict[str, Any]]) -> PipelineReport:
+    def run(
+        self,
+        input_data: Union[str, ProductInput, Dict[str, Any]],
+        on_gate: Optional[Callable[[GateResult], None]] = None,
+    ) -> PipelineReport:
         """
         Ejecuta el pipeline completo gobernado por los 6 Gates.
+
+        `on_gate` es un hook opcional de observabilidad: se invoca con cada
+        GateResult apenas el gate termina, sin esperar a que el pipeline
+        complete. Sirve para emitir progreso en vivo o enviar la traza a un
+        sistema de monitoreo. No altera la ejecución ni el resultado.
         """
         start_time = time.perf_counter()
         execution_id = str(uuid.uuid4())[:8]
         timestamp = datetime.now().isoformat()
         gates_evaluated: List[GateResult] = []
+
+        def registrar(gate: GateResult) -> None:
+            """Acumula el gate y notifica al observador si lo hay."""
+            gates_evaluated.append(gate)
+            if on_gate is not None:
+                on_gate(gate)
 
         # Determinar representación textual para prompts y Gate 1
         raw_text = ""
@@ -190,11 +205,11 @@ class FluentDropPipeline:
 
         # --- GATE 0: Pre-Flight ---
         g0 = self.gates.run_pre_flight()
-        gates_evaluated.append(g0)
+        registrar(g0)
 
         # --- GATE 1: Ingestion Integrity & Sanitizer ---
         g1, requires_review_g1 = self.gates.run_ingestion(raw_text)
-        gates_evaluated.append(g1)
+        registrar(g1)
 
         product_name = structured_input.producto if structured_input else "Producto"
         candidates = structured_input.proveedores_candidatos if structured_input else []
@@ -202,11 +217,11 @@ class FluentDropPipeline:
 
         # --- GATE 2: Hard Filter ---
         g2, viable_candidates = self.gates.run_hard_filter(candidates)
-        gates_evaluated.append(g2)
+        registrar(g2)
 
         # --- GATE 3: Viability Triage ---
         g3, should_invoke_llm = self.gates.run_triage(len(viable_candidates), product_name)
-        gates_evaluated.append(g3)
+        registrar(g3)
 
         model_name = None
         output_dict: Dict[str, Any] = {}
@@ -245,11 +260,11 @@ class FluentDropPipeline:
 
         # --- GATE 4: LLM Guardrail & Contract ---
         g4, validated_output = self.gates.run_guardrails(output_dict, scored_candidates)
-        gates_evaluated.append(g4)
+        registrar(g4)
 
         # --- GATE 5: Delivery & Idempotency ---
         g5, hash_id = self.gates.run_delivery(product_name, candidates, validated_output)
-        gates_evaluated.append(g5)
+        registrar(g5)
 
         total_latency = round((time.perf_counter() - start_time) * 1000.0, 2)
         all_passed = all(g.passed for g in gates_evaluated if g.critical)
