@@ -1,0 +1,5 @@
+Producto en tienda: Reloj deportivo sumergible
+Proveedores candidatos encontrados:
+- Proveedor Flojo: $5.00 USD, envio 10 dias, calificacion 2.8/5, stock 40 unidades
+- Proveedor Dudoso: $4.20 USD, envio 15 dias, calificacion 3.1/5, stock 60 unidades
+- Proveedor Agotado: $6.00 USD, envio 7 dias, calificacion 4.9/5, stock 0 unidades
