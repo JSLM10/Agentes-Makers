@@ -42,8 +42,15 @@
       de cada uno, FluentDrop te devuelve el del proveedor que gane.
     </p>
 
+    <div class="casos" id="casos" hidden>
+      <span class="campo-etiqueta">Casos de demostración</span>
+      <div class="casos-fila" id="casos-fila" role="group" aria-label="Casos de demostración"></div>
+      <p class="casos-nota" id="casos-nota"></p>
+    </div>
+
     <label class="campo-etiqueta" for="manifiesto">Proveedores a comparar</label>
-    <textarea id="manifiesto" spellcheck="false" rows="12"></textarea>
+    <textarea id="manifiesto" spellcheck="false" rows="12"
+      placeholder="Producto en tienda: ...&#10;- Proveedor X: $0.00 USD, envio 5 dias, calificacion 4.5/5, stock 100 unidades, url https://..."></textarea>
 
     <fieldset class="motor-opciones">
       <legend>Quién redacta la recomendación</legend>

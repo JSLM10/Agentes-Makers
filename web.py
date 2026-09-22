@@ -16,6 +16,8 @@ determinista sin red, que es el modo seguro para demostrar en vivo.
 Endpoints:
     GET  /                 Interfaz
     GET  /app.css, /app.js Estáticos
+    GET  /api/casos        Los casos de demostración de `casos/`, para que la
+                           interfaz los ofrezca sin tener que pegarlos a mano
     POST /api/despachar    Corre un caso y devuelve NDJSON en streaming:
                            una línea por gate apenas resuelve, luego una
                            línea final con el contrato de salida.
@@ -32,6 +34,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 WEB_DIR = ROOT / "web"
+CASOS_DIR = ROOT / "casos"
 sys.path.insert(0, str(ROOT))
 
 from src.pipeline_orchestrator import FluentDropPipeline  # noqa: E402
@@ -54,6 +57,32 @@ NOMBRES_GATE = {
 }
 
 
+def cargar_casos():
+    """
+    Lee el índice de casos y el texto de cada uno.
+
+    Los .txt son la única fuente: los mismos archivos que consume
+    `demo.py --archivo`. Un caso cuyo archivo falte se omite en vez de romper
+    la interfaz, para que una demo a medio armar siga levantando.
+    """
+    indice = CASOS_DIR / "casos.json"
+    if not indice.is_file():
+        return []
+
+    casos = []
+    for entrada in json.loads(indice.read_text(encoding="utf-8")):
+        archivo = CASOS_DIR / entrada["archivo"]
+        if not archivo.is_file():
+            continue
+        casos.append({
+            "id": entrada["id"],
+            "titulo": entrada["titulo"],
+            "nota": entrada["nota"],
+            "texto": archivo.read_text(encoding="utf-8").strip(),
+        })
+    return casos
+
+
 class Manejador(BaseHTTPRequestHandler):
     # HTTP/1.0 permite cerrar la conexión para señalar el fin del stream,
     # sin necesidad de codificación chunked.
@@ -63,9 +92,15 @@ class Manejador(BaseHTTPRequestHandler):
     def log_message(self, formato, *args):
         """Silencia el log por petición; el servidor ya anuncia su arranque."""
 
-    # --- GET: interfaz y estáticos ---
+    # --- GET: interfaz, estáticos y casos de demostración ---
     def do_GET(self):
         ruta = self.path.split("?")[0]
+
+        if ruta == "/api/casos":
+            cuerpo = json.dumps(cargar_casos(), ensure_ascii=False).encode("utf-8")
+            self._enviar(200, "application/json; charset=utf-8", cuerpo)
+            return
+
         nombre = "index.html" if ruta == "/" else ruta.lstrip("/")
         archivo = (WEB_DIR / nombre).resolve()
 

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "normal",
+    "archivo": "1-normal.txt",
+    "titulo": "Camino feliz",
+    "nota": "Tres proveedores con enlaces reales. Las seis aduanas en verde y sale el ganador con su URL."
+  },
+  {
+    "id": "fraude",
+    "archivo": "2-fraude.txt",
+    "titulo": "Reseñas de estafa",
+    "nota": "El más barato y el más rápido tiene calificación 1.4. Gate 2 lo excluye antes de que el modelo lo vea."
+  },
+  {
+    "id": "injection",
+    "archivo": "3-injection.txt",
+    "titulo": "Prompt injection",
+    "nota": "Intento de forzar una compra. Gate 1 lo detecta y Gate 3 cortocircuita: el modelo nunca se llama."
+  },
+  {
+    "id": "sin-candidatos",
+    "archivo": "4-sin-candidatos.txt",
+    "titulo": "Nadie califica",
+    "nota": "Calificaciones bajo 3.5 y stock en cero. No recomienda nada y pide revisión humana."
+  }
+]

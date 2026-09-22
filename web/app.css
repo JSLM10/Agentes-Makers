@@ -461,3 +461,37 @@ body.arrancando .pie { opacity: 0; }
   body.arrancando .patio,
   body.arrancando .pie { opacity: 1; }
 }
+
+/* ---------- Casos de demostración ----------
+   Declaraciones tipo, para no escribir un manifiesto a mano en cada demo. */
+.casos { margin-bottom: 1.25rem; }
+
+.casos-fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+.caso {
+  background: var(--petroleo-bajo);
+  border: 1px solid var(--hairline);
+  color: var(--cal-tenue);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  padding: 0.42rem 0.7rem;
+  cursor: pointer;
+}
+.caso:hover { color: var(--cal); border-color: var(--cal-tenue); }
+.caso[aria-pressed="true"] {
+  border-color: var(--sello);
+  color: var(--cal);
+  background: rgba(111, 164, 83, 0.12);
+}
+.casos-nota {
+  margin: 0;
+  color: var(--cal-tenue);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  min-height: 2.4em;
+  max-width: 60ch;
+}

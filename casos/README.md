@@ -1,7 +1,15 @@
 # Casos para demostrar en vivo
 
-Cuatro escenarios en orden de presentación. Cada uno se pega en el textarea de
-la interfaz (`python web.py`) o se corre por terminal:
+Cuatro escenarios en orden de presentación.
+
+La interfaz (`python web.py`) los ofrece como botones encima del manifiesto: se
+elige uno y queda cargado, sin pegar nada a mano. `casos.json` es el índice que
+el servidor expone en `/api/casos`; los `.txt` son la única fuente del texto.
+
+Para agregar un caso: poner el `.txt` en esta carpeta y añadir su entrada en
+`casos.json`. No hay que tocar código.
+
+También se corren por terminal:
 
 ```bash
 python demo.py --archivo casos/1-normal.txt

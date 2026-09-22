@@ -9,14 +9,45 @@ const GATES = [
   ["G5", "Despacho e idempotencia"],
 ];
 
-const CASO_INICIAL = `Producto en tienda: Audifonos inalambricos Bluetooth TWS
-Proveedor actual: Proveedor Actual - $19.00 USD, envio 25 dias, calificacion 3.7/5, stock 8 unidades
-Proveedores candidatos encontrados:
-- Proveedor A6S: $3.71 USD, envio 18-25 dias, calificacion 4.3/5, stock 500 unidades, url https://es.aliexpress.com/item/1005008070148600.html
-- Proveedor TWS9D: $15.68 USD, envio 8-12 dias, calificacion 4.7/5, stock 300 unidades, url https://es.aliexpress.com/item/1005007010288547.html
-- Proveedor MiniSlim: $17.23 USD, envio 6-10 dias, calificacion 4.8/5, stock 180 unidades, url https://es.aliexpress.com/item/1005011653931360.html`;
-
 const $ = (id) => document.getElementById(id);
+
+
+/* ---------- Casos de demostración ----------
+   Los sirve el servidor desde casos/, los mismos .txt que usa demo.py, para
+   no tener que pegar un manifiesto a mano durante una presentación. */
+
+async function cargarCasos() {
+  let casos;
+  try {
+    const respuesta = await fetch("/api/casos");
+    casos = await respuesta.json();
+  } catch {
+    return; // Sin casos, el textarea queda vacío con su placeholder.
+  }
+  if (!casos.length) return;
+
+  const fila = $("casos-fila");
+  const nota = $("casos-nota");
+
+  const elegir = (caso, boton) => {
+    manifiesto.value = caso.texto;
+    nota.textContent = caso.nota;
+    for (const otro of fila.children) otro.setAttribute("aria-pressed", String(otro === boton));
+  };
+
+  casos.forEach((caso, i) => {
+    const boton = document.createElement("button");
+    boton.type = "button";
+    boton.className = "caso";
+    boton.textContent = caso.titulo;
+    boton.setAttribute("aria-pressed", "false");
+    boton.addEventListener("click", () => elegir(caso, boton));
+    fila.append(boton);
+    if (i === 0) elegir(caso, boton);
+  });
+
+  $("casos").hidden = false;
+}
 
 /* ---------- Portada: arranque de la terminal de despacho ----------
    Las líneas del log dicen lo que el sistema realmente carga; no son adorno.
@@ -85,7 +116,6 @@ const linea = $("linea");
 const cajaError = $("error");
 const panelDespacho = $("panel-despacho");
 
-manifiesto.value = CASO_INICIAL;
 
 /** Dibuja la tubería en reposo: seis estaciones y la del modelo entre G3 y G4. */
 function reiniciarLinea() {
@@ -345,4 +375,5 @@ function mostrarError(mensaje) {
 
 boton.addEventListener("click", despachar);
 reiniciarLinea();
+cargarCasos();
 arrancar();
