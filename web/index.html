@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FluentDrop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<header class="cabecera">
+  <div class="marca">
+    <span class="marca-nombre">FluentDrop</span>
+    <span class="marca-oficio">Manifiesto de aprovisionamiento</span>
+  </div>
+  <dl class="folio">
+    <dt>Folio</dt><dd id="folio">—</dd>
+    <dt>Motor</dt><dd id="motor">en espera</dd>
+  </dl>
+</header>
+
+<main class="patio">
+
+  <!-- Declaración: lo que el comerciante trae -->
+  <section class="panel panel-declaracion">
+    <h2 class="panel-titulo">Declaración</h2>
+    <p class="panel-nota">
+      Pega el producto y los proveedores que encontraste. Si incluyes el enlace
+      de cada uno, FluentDrop te devuelve el del proveedor que gane.
+    </p>
+
+    <label class="campo-etiqueta" for="manifiesto">Proveedores a comparar</label>
+    <textarea id="manifiesto" spellcheck="false" rows="12"></textarea>
+
+    <fieldset class="motor-opciones">
+      <legend>Quién redacta la recomendación</legend>
+      <label>
+        <input type="radio" name="motor" value="live" checked>
+        <span>Modelo real <em>NVIDIA Nemotron</em></span>
+      </label>
+      <label>
+        <input type="radio" name="motor" value="offline">
+        <span>Motor determinista <em>sin red</em></span>
+      </label>
+    </fieldset>
+
+    <button id="despachar" class="despachar" type="button">Despachar manifiesto</button>
+    <p class="error" id="error" hidden></p>
+  </section>
+
+  <!-- Aduanas: los 6 gates, en vivo -->
+  <section class="panel panel-aduanas">
+    <h2 class="panel-titulo">Aduanas</h2>
+    <p class="panel-nota" id="aduanas-nota">
+      Seis inspecciones deterministas. El modelo solo interviene entre la cuarta
+      y la quinta, y únicamente si quedan candidatos viables.
+    </p>
+    <ol class="linea" id="linea"></ol>
+  </section>
+
+  <!-- Despachado: el resultado -->
+  <section class="panel panel-despacho" id="panel-despacho" hidden>
+    <h2 class="panel-titulo">Despachado</h2>
+    <div id="despacho"></div>
+    <details class="contrato">
+      <summary>Ver el contrato completo de 9 campos</summary>
+      <pre id="contrato-json"></pre>
+    </details>
+  </section>
+
+</main>
+
+<footer class="pie">
+  <p>
+    FluentDrop compara proveedores y recomienda. Nunca ejecuta compras, nunca
+    cambia el proveedor activo de la tienda. La decisión final la firma una persona.
+  </p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

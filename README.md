@@ -26,8 +26,9 @@ Usuario / Tienda → Ingesta → G0 (Preflight) → G1 (Integridad) → G2 (Filt
 
 ---
 
-### Los 5 Pilares del Sistema
+### Los Pilares del Sistema
 
+0. **Interfaz de Despacho:** `python web.py` levanta una interfaz que corre el pipeline real y emite la traza de las 6 aduanas por streaming, sellando cada una en el momento en que resuelve. Deja ver algo que un log no transmite: los gates deterministas tardan milisegundos y la espera larga es siempre el modelo. Se puede alternar entre el modelo real y el motor determinista sin red desde la misma pantalla.
 1. **Arquitectura de Microservicios:** Módulos desacoplados en `src/` con Ingesta y normalización, Motor de Gates (`src/gates/`), Motor de Decisión Multicriterio (`src/scoring/`), Síntesis LLM desacoplada (`src/services/`) y Orquestador de Pipeline (`src/pipeline_orchestrator.py`).
 2. **Lógica Matemática Determinista (MCDA):** Fórmulas continuas de normalización para ahorro relativo de precio, penalización no lineal de envíos, escalamiento de calificación en $[3.5, 5.0]$, buffer logarítmico de inventario y penalización de $60\%$ ante reseñas con alertas de fraude o roturas.
 3. **Motor de 6 Gates de Calidad y Seguridad:**
@@ -59,6 +60,9 @@ Usuario / Tienda → Ingesta → G0 (Preflight) → G1 (Integridad) → G2 (Filt
 ```bash
 # 0. Instalar dependencias
 pip install -r requirements.txt
+
+# Interfaz web: corre el pipeline real y estampa cada aduana en vivo
+python web.py                     # http://localhost:8000
 
 # Correr un caso y ver la traza de los 6 Gates y el contrato de salida
 python demo.py                    # caso de ejemplo, contra el modelo real
@@ -133,6 +137,8 @@ está en [evals/results/transcripcion_demo.txt](evals/results/transcripcion_demo
 ├── .env                                         # NVIDIA_API_KEY / NVIDIA_MODEL (NO se sube)
 ├── requirements.txt                             # Dependencias de ejecución
 ├── demo.py                                      # Corre un caso y muestra Gates + contrato
+├── web.py                                       # Servidor de la interfaz (solo librería estándar)
+├── web/                                         # Interfaz: index.html, app.css, app.js
 ├── Sesion 8 - Use case - FluentDrop.ipynb       # Notebook principal del agente
 ├── docs/
 │   ├── ARCHITECTURE_MICROSERVICIOS.md          # Especificación técnica maestra completa
