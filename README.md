@@ -28,18 +28,18 @@ Usuario / Tienda → Ingesta → G0 (Preflight) → G1 (Integridad) → G2 (Filt
 
 ### Los Pilares del Sistema
 
-0. **Interfaz de Despacho:** `python web.py` levanta una interfaz que corre el pipeline real y emite la traza de las 6 aduanas por streaming, sellando cada una en el momento en que resuelve. Deja ver algo que un log no transmite: los gates deterministas tardan milisegundos y la espera larga es siempre el modelo. Se puede alternar entre el modelo real y el motor determinista sin red desde la misma pantalla.
-1. **Arquitectura de Microservicios:** Módulos desacoplados en `src/` con Ingesta y normalización, Motor de Gates (`src/gates/`), Motor de Decisión Multicriterio (`src/scoring/`), Síntesis LLM desacoplada (`src/services/`) y Orquestador de Pipeline (`src/pipeline_orchestrator.py`).
-2. **Lógica Matemática Determinista (MCDA):** Fórmulas continuas de normalización para ahorro relativo de precio, penalización no lineal de envíos, escalamiento de calificación en $[3.5, 5.0]$, buffer logarítmico de inventario y penalización de $60\%$ ante reseñas con alertas de fraude o roturas.
-3. **Motor de 6 Gates de Calidad y Seguridad:**
+1. **Interfaz de Despacho:** `python web.py` levanta una interfaz que corre el pipeline real y emite la traza de las 6 aduanas por streaming, sellando cada una en el momento en que resuelve. Deja ver algo que un log no transmite: los gates deterministas tardan milisegundos y la espera larga es siempre el modelo. Se puede alternar entre el modelo real y el motor determinista sin red desde la misma pantalla.
+2. **Arquitectura de Microservicios:** Módulos desacoplados en `src/` con Ingesta y normalización, Motor de Gates (`src/gates/`), Motor de Decisión Multicriterio (`src/scoring/`), Síntesis LLM desacoplada (`src/services/`) y Orquestador de Pipeline (`src/pipeline_orchestrator.py`).
+3. **Lógica Matemática Determinista (MCDA):** Fórmulas continuas de normalización para ahorro relativo de precio, penalización no lineal de envíos, escalamiento de calificación en $[3.5, 5.0]$, buffer logarítmico de inventario y penalización de $60\%$ ante reseñas con alertas de fraude o roturas.
+4. **Motor de 6 Gates de Calidad y Seguridad:**
    - **Gate 0 (Pre-Flight):** Verificación de credenciales y conectividad con NVIDIA NIM.
    - **Gate 1 (Ingestion Integrity):** Detección y bloqueo de prompt injection o payloads corruptos.
    - **Gate 2 (Sanity & Hard Business Filter):** Exclusión de precios $\le 0$, stock $\le 0$, rating $< 3.5$ y listas negras.
    - **Gate 3 (Viability Triage):** Cortocircuito con coste cero de LLM si ningún proveedor cumple las condiciones mínimas.
    - **Gate 4 (LLM Guardrails & Contract):** Validación estricta con Pydantic V2 del contrato canónico de 9 campos, veto de acciones prohibidas (*"compra realizada"*, *"proveedor cambiado"*), veto del proveedor recomendado si su calificación es inferior a 3.5, y **veto determinista de discrepancias contra el input**: si el enlace entregado no es el del proveedor recomendado, o si ese proveedor no estaba entre los candidatos, la salida se repara y pasa a revisión humana.
    - **Gate 5 (Delivery & Idempotency):** Hash de firma SHA-256 sobre producto y candidatos, que sirve de clave de idempotencia y de traza de auditoría para la entrega.
-4. **Enlace al Producto sin Alucinación:** El contrato incluye `url_producto`, el único campo que **el modelo nunca produce**. Lo escribe el pipeline copiándolo del candidato ganador del input. La razón es concreta: un enlace inventado no es una respuesta imprecisa, es un comerciante comprándole al proveedor equivocado. El enlace es un dato del catálogo, así que se copia en vez de inferirse, y Gate 4 verifica que el entregado sea exactamente el del input.
-5. **Framework de Evals (5 Capas):** Pruebas de contrato y esquema, robustez adversarial, monotonicidad matemática, benchmark con dataset patrón curado (`evals/data/golden_dataset.json`), y SLAs de latencia y estabilidad.
+5. **Enlace al Producto sin Alucinación:** El contrato incluye `url_producto`, el único campo que **el modelo nunca produce**. Lo escribe el pipeline copiándolo del candidato ganador del input. La razón es concreta: un enlace inventado no es una respuesta imprecisa, es un comerciante comprándole al proveedor equivocado. El enlace es un dato del catálogo, así que se copia en vez de inferirse, y Gate 4 verifica que el entregado sea exactamente el del input.
+6. **Framework de Evals (5 Capas):** Pruebas de contrato y esquema, robustez adversarial, monotonicidad matemática, benchmark con dataset patrón curado (`evals/data/golden_dataset.json`), y SLAs de latencia y estabilidad.
 
 ---
 
