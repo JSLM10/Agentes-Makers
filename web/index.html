@@ -9,7 +9,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="app.css">
 </head>
-<body>
+<body class="arrancando">
+
+<!-- Portada: la terminal de despacho levantandose. Se salta con clic o tecla. -->
+<div class="arranque" id="arranque">
+  <div class="arranque-consola">
+    <pre class="arranque-log" id="arranque-log" aria-hidden="true"></pre>
+    <p class="arranque-nombre" id="arranque-nombre"><span class="cursor" id="cursor"></span></p>
+    <p class="arranque-oficio" id="arranque-oficio">Manifiesto de aprovisionamiento</p>
+  </div>
+  <button class="arranque-saltar" id="arranque-saltar" type="button">Saltar</button>
+</div>
 
 <header class="cabecera">
   <div class="marca">

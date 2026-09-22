@@ -361,3 +361,103 @@ input[type="radio"] { accent-color: var(--sello); margin: 0; }
   border-top: 1px solid var(--hairline);
 }
 .pie p { margin: 0; color: var(--cal-tenue); font-size: 0.75rem; max-width: 74ch; }
+
+/* ---------- Portada: la terminal de despacho levantándose ----------
+   Es el único momento de movimiento no pedido por el usuario en toda la
+   página, y por eso concentra toda la intención: se escribe el nombre
+   como lo escribiría la consola, y de ahí se entrega al manifiesto. */
+
+.arranque {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--petroleo);
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  padding: 2rem clamp(1rem, 8vw, 7rem);
+  transition: opacity 420ms ease, visibility 420ms;
+}
+body:not(.arrancando) .arranque {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* El contenido de la página espera detrás, quieto, hasta que la portada cede */
+body.arrancando .cabecera,
+body.arrancando .patio,
+body.arrancando .pie { opacity: 0; }
+.cabecera, .patio, .pie { transition: opacity 520ms ease 120ms; }
+
+.arranque-consola { width: min(100%, 52rem); }
+
+.arranque-log {
+  margin: 0 0 1.5rem;
+  font-family: var(--mono);
+  font-size: clamp(0.6875rem, 1.6vw, 0.8125rem);
+  line-height: 1.9;
+  color: var(--cal-tenue);
+  white-space: pre-wrap;
+  min-height: 9.5em;
+}
+.arranque-log .linea-log { display: block; }
+.arranque-log b { color: var(--sello); font-weight: 500; }
+.arranque-log i { color: var(--ambar); font-style: normal; }
+
+.arranque-nombre {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(3rem, 13vw, 9rem);
+  line-height: 0.9;
+  letter-spacing: 0.01em;
+  color: var(--cal);
+  min-height: 0.9em;
+}
+
+/* Cursor de bloque, del ancho de un carácter de la mono */
+.cursor {
+  display: inline-block;
+  width: 0.4em;
+  height: 0.72em;
+  margin-left: 0.08em;
+  background: var(--sello);
+  vertical-align: baseline;
+  animation: parpadeo 1s steps(1, end) infinite;
+}
+@keyframes parpadeo { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
+.arranque-oficio {
+  margin: 0.9rem 0 0;
+  font-family: var(--mono);
+  font-size: clamp(0.75rem, 2vw, 0.9375rem);
+  letter-spacing: 0.14em;
+  color: var(--cal-tenue);
+  opacity: 0;
+  transition: opacity 500ms ease;
+}
+.arranque-oficio.visible { opacity: 1; }
+
+.arranque-saltar {
+  position: absolute;
+  right: clamp(1rem, 5vw, 3rem);
+  bottom: clamp(1rem, 5vw, 3rem);
+  background: transparent;
+  border: 1px solid var(--hairline);
+  color: var(--cal-tenue);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+.arranque-saltar:hover { border-color: var(--cal-tenue); color: var(--cal); }
+
+/* Sin animación: la portada no aparece y la página está lista de inmediato */
+@media (prefers-reduced-motion: reduce) {
+  .arranque { display: none; }
+  .cursor { animation: none; }
+  body.arrancando .cabecera,
+  body.arrancando .patio,
+  body.arrancando .pie { opacity: 1; }
+}

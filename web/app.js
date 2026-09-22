@@ -17,6 +17,68 @@ Proveedores candidatos encontrados:
 - Proveedor MiniSlim: $17.23 USD, envio 6-10 dias, calificacion 4.8/5, stock 180 unidades, url https://es.aliexpress.com/item/1005011653931360.html`;
 
 const $ = (id) => document.getElementById(id);
+
+/* ---------- Portada: arranque de la terminal de despacho ----------
+   Las líneas del log dicen lo que el sistema realmente carga; no son adorno.
+   Se salta con clic, tecla o el botón, y no se reproduce si el navegador
+   pide movimiento reducido. */
+
+const NOMBRE = "FluentDrop";
+
+const BOOT = [
+  "$ fluentdrop --arrancar",
+  "motor determinista MCDA ............... <b>listo</b>",
+  "aduanas G0..G5 registradas ............ <b>6</b>",
+  "contrato canonico ..................... <b>9 campos</b>",
+  "sintesis .............................. <i>nvidia/nemotron-3-super-120b</i>",
+  "",
+];
+
+const sinMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function terminarArranque() {
+  document.body.classList.remove("arrancando");
+  document.removeEventListener("keydown", terminarArranque);
+  const portada = document.getElementById("arranque");
+  if (portada) portada.setAttribute("aria-hidden", "true");
+}
+
+function arrancar() {
+  if (sinMovimiento) {
+    terminarArranque();
+    return;
+  }
+
+  const log = $("arranque-log");
+  const nombre = $("arranque-nombre");
+  const cursor = $("cursor");
+  let t = 160;
+
+  // El log de consola aparece línea por línea, como saldría de verdad.
+  // Cada línea es su propio bloque, para no depender de saltos literales.
+  BOOT.forEach((linea) => {
+    setTimeout(() => {
+      log.insertAdjacentHTML("beforeend", `<span class="linea-log">${linea || "&nbsp;"}</span>`);
+    }, t);
+    t += 170;
+  });
+
+  // El nombre sí se escribe carácter por carácter: es el momento de la portada.
+  t += 220;
+  for (let i = 0; i < NOMBRE.length; i++) {
+    setTimeout(() => cursor.before(NOMBRE[i]), t);
+    t += 85;
+  }
+
+  setTimeout(() => $("arranque-oficio").classList.add("visible"), t + 120);
+  setTimeout(terminarArranque, t + 900);
+
+  document.getElementById("arranque").addEventListener("click", terminarArranque);
+  document.getElementById("arranque-saltar").addEventListener("click", terminarArranque);
+  document.addEventListener("keydown", terminarArranque);
+}
+
+
 const manifiesto = $("manifiesto");
 const boton = $("despachar");
 const linea = $("linea");
@@ -283,3 +345,4 @@ function mostrarError(mensaje) {
 
 boton.addEventListener("click", despachar);
 reiniciarLinea();
+arrancar();
