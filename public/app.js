@@ -131,14 +131,17 @@ function pintarEspera() {
   contenedor().appendChild(nodo);
   alFinal();
 
-  const etiqueta = nodo.querySelector(".espera-etiqueta");
   let indice = 0;
   const reloj = setInterval(() => {
     indice = (indice + 1) % ETAPAS.length;
+    // Hay que volver a buscar la etiqueta en cada vuelta. Guardar la
+    // referencia de fuera la deja obsoleta en cuanto se reemplaza la primera
+    // vez, y `replaceWith` sobre un nodo ya desprendido no hace nada: el
+    // rotulo se quedaria congelado en la segunda etapa.
+    const viva = nodo.querySelector(".espera-etiqueta");
     const nueva = crear("span", "espera-etiqueta");
     nueva.textContent = ETAPAS[indice];
-    etiqueta.replaceWith(nueva);
-    nodo.querySelector(".espera-etiqueta").id = "etapa-viva";
+    viva.replaceWith(nueva);
   }, 900);
 
   return () => {
