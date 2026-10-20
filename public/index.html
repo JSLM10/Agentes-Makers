@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="FluentDrop — agente que compara proveedores de dropshipping y muestra las seis aduanas por las que pasó cada veredicto."
+    />
+    <title>FluentDrop — Sala de despacho</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2308120e'/%3E%3Cpath d='M9 10h14M9 16h14M9 22h8' stroke='%2334d399' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E"
+    />
+
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+
+  <body>
+    <div class="marco">
+      <header class="cabecera">
+        <div class="marca">
+          <span class="marca-nombre">FluentDrop</span>
+          <span class="marca-rol">Sala de despacho</span>
+        </div>
+
+        <div class="motor" id="motor" hidden>
+          <span class="motor-punto" id="motor-punto"></span>
+          <span class="motor-texto" id="motor-texto">conectando</span>
+        </div>
+      </header>
+
+      <main class="hilo" id="hilo" tabindex="-1">
+        <!-- Pantalla vacía: lo primero que se ve es qué decide este agente. -->
+        <section class="bienvenida" id="bienvenida">
+          <h1 class="bienvenida-titulo">¿A qué proveedor le compro?</h1>
+          <p class="bienvenida-texto">
+            Dime qué proveedores estás mirando y con qué datos cuentas: precio, cuánto tarda
+            el envío, calificación, stock. Te digo cuál conviene y por qué, o te digo que
+            ninguno sirve. No compro nada ni toco tu tienda.
+          </p>
+
+          <div class="ejemplo">
+            <span class="ejemplo-etiqueta">Por ejemplo</span>
+            <button class="ejemplo-frase" type="button" data-ejemplo>
+              Necesito saber si el proveedor es bueno: el envío tarda 12 días, cuesta 8 dólares
+              y tiene calificación 4.5 con 200 unidades.
+            </button>
+          </div>
+
+          <div class="casos" id="casos" hidden>
+            <span class="casos-etiqueta">Casos de prueba</span>
+            <div class="casos-lista" id="casos-lista"></div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="redaccion">
+        <form class="pildora" id="formulario" autocomplete="off">
+          <span class="pildora-aurora" aria-hidden="true">
+            <i></i><i></i><i></i>
+          </span>
+
+          <label class="visualmente-oculto" for="entrada">Escribe tu consulta</label>
+          <textarea
+            class="campo"
+            id="entrada"
+            name="entrada"
+            rows="1"
+            placeholder="Escribe los proveedores que estás comparando…"
+            maxlength="4000"
+          ></textarea>
+
+          <button class="enviar" id="enviar" type="submit" aria-label="Enviar consulta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 19V5M5 12l7-7 7 7" />
+            </svg>
+          </button>
+        </form>
+
+        <p class="nota-pie">
+          FluentDrop recomienda; la compra la haces tú. Cada veredicto se arma del contrato
+          que validaron las seis aduanas.
+        </p>
+      </footer>
+    </div>
+
+    <div class="anuncio" id="anuncio" role="status" aria-live="polite"></div>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

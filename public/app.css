@@ -1,0 +1,922 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   FluentDrop — sistema visual
+   ───────────────────────────────────────────────────────────────────────────
+   Hereda la dirección de VAR: sala de videoarbitraje en un estadio de noche.
+   Fondo de césped a oscuras, estructura trazada con líneas de tiza en vez de
+   tarjetas con sombra, tipografía condensada de dorsal. El color se reserva
+   para los estados: ámbar mientras se despacha, esmeralda cuando hay
+   recomendación fundamentada, rojo cuando una aduana bloquea.
+
+   Lo propio de este producto es la tira de aduanas. Donde VAR enseña las
+   fuentes que sustentan una respuesta, aquí se enseñan las seis aduanas que
+   el caso atravesó y el desglose MCDA de cada proveedor. Es el único sitio
+   donde la interfaz levanta la voz.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --pitch: #08120e;
+  --pitch-deep: #050c09;
+  --turf: #0e1c16;
+  --turf-hi: #16281f;
+  --chalk: #e8efe9;
+  --chalk-dim: #8fa498;
+  --chalk-faint: #5a6d63;
+  --signal: #34d399;
+  --caution: #f5b02e;
+  --foul: #e5484d;
+
+  /* Líneas de tiza: estructura en vez de tarjetas con sombra. */
+  --line: rgba(232, 239, 233, 0.1);
+  --line-strong: rgba(232, 239, 233, 0.2);
+
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+
+  --ancho: 720px;
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--pitch);
+  color: var(--chalk);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Marcas del campo: muy tenues, solo para que el fondo no sea plano. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 50% 24%, rgba(52, 211, 153, 0.05), transparent 55%),
+    radial-gradient(ellipse at 50% 120%, rgba(232, 239, 233, 0.04), transparent 60%);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--display);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+  margin: 0;
+}
+
+::selection {
+  background: rgba(52, 211, 153, 0.3);
+  color: var(--chalk);
+}
+
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(232, 239, 233, 0.16) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(232, 239, 233, 0.16);
+  border-radius: 99px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.visualmente-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ─── Marco ──────────────────────────────────────────────────────────────── */
+
+.marco {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100dvh;
+}
+
+.cabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 24px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.marca {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.marca-nombre {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.marca-rol {
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--chalk-faint);
+  white-space: nowrap;
+}
+
+.motor {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--chalk-faint);
+  white-space: nowrap;
+}
+
+.motor-punto {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--chalk-faint);
+  flex: none;
+}
+.motor[data-estado="modelo"] .motor-punto {
+  background: var(--signal);
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.7);
+}
+.motor[data-estado="determinista"] .motor-punto {
+  background: var(--caution);
+}
+.motor[data-estado="caido"] .motor-punto {
+  background: var(--foul);
+}
+
+/* ─── Hilo ───────────────────────────────────────────────────────────────── */
+
+.hilo {
+  overflow-y: auto;
+  padding: 28px 24px 8px;
+  scroll-behavior: smooth;
+}
+
+.hilo-interior {
+  max-width: var(--ancho);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+/* ─── Bienvenida ─────────────────────────────────────────────────────────── */
+
+.bienvenida {
+  max-width: var(--ancho);
+  margin: 0 auto;
+  padding: 6vh 0 0;
+}
+
+.bienvenida-titulo {
+  font-size: clamp(34px, 7vw, 54px);
+  font-weight: 700;
+  letter-spacing: 0.005em;
+  text-wrap: balance;
+}
+
+.bienvenida-texto {
+  margin: 14px 0 0;
+  max-width: 54ch;
+  color: var(--chalk-dim);
+}
+
+.ejemplo {
+  margin-top: 30px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.ejemplo-etiqueta,
+.casos-etiqueta {
+  display: block;
+  margin-bottom: 10px;
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--chalk-faint);
+}
+
+.ejemplo-frase {
+  display: block;
+  width: 100%;
+  max-width: 56ch;
+  padding: 12px 15px;
+  border: 1px solid var(--line);
+  border-left: 2px solid rgba(52, 211, 153, 0.45);
+  border-radius: 0 7px 7px 0;
+  background: rgba(22, 40, 31, 0.5);
+  color: var(--chalk-dim);
+  font: inherit;
+  font-style: italic;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+.ejemplo-frase:hover {
+  color: var(--chalk);
+  background: rgba(22, 40, 31, 0.85);
+  border-left-color: var(--signal);
+}
+
+.casos {
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.casos-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.caso {
+  padding: 7px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--chalk-dim);
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease;
+}
+.caso:hover {
+  color: var(--chalk);
+  border-color: rgba(52, 211, 153, 0.45);
+}
+.caso:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ─── Mensajes ───────────────────────────────────────────────────────────── */
+
+.turno {
+  animation: aparecer 0.3s ease both;
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+}
+
+/* Lo que escribió el usuario: marcado con una línea de tiza a la izquierda,
+   no con una burbuja. La estructura la dan las líneas, como en el campo. */
+.turno-usuario {
+  padding-left: 15px;
+  border-left: 2px solid var(--line-strong);
+  color: var(--chalk-dim);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.turno-agente {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.agente-firma {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--chalk-faint);
+}
+
+.agente-firma::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.firma-punto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--signal);
+  box-shadow: 0 0 9px rgba(52, 211, 153, 0.75);
+  flex: none;
+}
+.turno-agente[data-tipo="rechazo"] .firma-punto,
+.turno-agente[data-tipo="aclaracion"] .firma-punto {
+  background: var(--caution);
+  box-shadow: 0 0 9px rgba(245, 176, 46, 0.6);
+}
+.turno-agente[data-revision="si"] .firma-punto {
+  background: var(--caution);
+  box-shadow: 0 0 9px rgba(245, 176, 46, 0.6);
+}
+
+.cuerpo {
+  margin: 0;
+  max-width: 64ch;
+  overflow-wrap: anywhere;
+}
+
+.cuerpo p {
+  margin: 0 0 11px;
+}
+.cuerpo p:last-child {
+  margin-bottom: 0;
+}
+
+.cuerpo strong {
+  font-weight: 600;
+  color: var(--chalk);
+}
+
+.cuerpo a {
+  color: var(--signal);
+  text-underline-offset: 3px;
+}
+
+/* Aviso de que el caso pasa a revisión humana. */
+.revision {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 13px;
+  border: 1px solid rgba(245, 176, 46, 0.3);
+  border-radius: 7px;
+  background: rgba(245, 176, 46, 0.07);
+  color: var(--caution);
+  font-size: 13.5px;
+  max-width: 64ch;
+}
+
+.error {
+  padding: 11px 14px;
+  border: 1px solid rgba(229, 72, 77, 0.4);
+  border-radius: 7px;
+  background: rgba(229, 72, 77, 0.08);
+  color: var(--foul);
+  max-width: 64ch;
+}
+
+/* ─── La tira de aduanas ─────────────────────────────────────────────────────
+   El elemento con el que carga la identidad del producto. Seis sellos que se
+   estampan en orden, con la latencia real de cada aduana. En una demostración
+   deja ver de un vistazo que una pregunta rechazada nunca llegó al nodo de
+   generación, y que los gates deterministas tardan milisegundos mientras la
+   espera larga es siempre el modelo.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.aduanas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+.sello {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgba(14, 28, 22, 0.7);
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--chalk-faint);
+  cursor: help;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.sello[data-visible] {
+  opacity: 1;
+  transform: none;
+}
+
+.sello[data-estado="ok"] {
+  color: var(--signal);
+  border-color: rgba(52, 211, 153, 0.35);
+}
+.sello[data-estado="bloqueado"] {
+  color: var(--foul);
+  border-color: rgba(229, 72, 77, 0.45);
+  background: rgba(229, 72, 77, 0.08);
+}
+
+.sello-ms {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--chalk-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.sello-globo {
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 0;
+  z-index: 5;
+  width: max-content;
+  max-width: 290px;
+  padding: 8px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--pitch-deep);
+  color: var(--chalk-dim);
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.45;
+  text-transform: none;
+  white-space: normal;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+  box-shadow: 0 14px 34px -18px rgba(0, 0, 0, 0.95);
+}
+.sello:hover .sello-globo,
+.sello:focus-visible .sello-globo {
+  opacity: 1;
+  visibility: visible;
+}
+.sello-globo b {
+  display: block;
+  color: var(--chalk);
+  font-family: var(--display);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.aduanas-total {
+  margin-left: 3px;
+  font-family: var(--display);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--chalk-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Evidencia: el desglose MCDA ────────────────────────────────────────── */
+
+.evidencia {
+  max-width: 64ch;
+  border-top: 1px solid var(--line);
+  padding-top: 11px;
+}
+
+.evidencia > summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--chalk-faint);
+  cursor: pointer;
+  list-style: none;
+  transition: color 0.18s ease;
+}
+.evidencia > summary::-webkit-details-marker {
+  display: none;
+}
+.evidencia > summary:hover {
+  color: var(--chalk-dim);
+}
+.evidencia > summary::before {
+  content: "▸";
+  font-size: 10px;
+  transition: transform 0.18s ease;
+}
+.evidencia[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.proveedor {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+.proveedor:last-child {
+  border-bottom: 0;
+  padding-bottom: 2px;
+}
+
+.proveedor-puesto {
+  grid-row: span 3;
+  align-self: start;
+  width: 30px;
+  padding-top: 1px;
+  font-family: var(--display);
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--chalk-faint);
+  font-variant-numeric: tabular-nums;
+}
+.proveedor[data-viable="no"] .proveedor-puesto {
+  color: rgba(229, 72, 77, 0.55);
+}
+.proveedor[data-puesto="1"][data-viable="si"] .proveedor-puesto {
+  color: var(--signal);
+}
+
+.proveedor-nombre {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--chalk);
+}
+.proveedor[data-viable="no"] .proveedor-nombre {
+  color: var(--chalk-dim);
+  text-decoration: line-through;
+  text-decoration-color: rgba(229, 72, 77, 0.5);
+}
+
+.proveedor-datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 13px;
+  color: var(--chalk-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.proveedor-excluido {
+  font-size: 13px;
+  color: var(--foul);
+}
+
+/* Las cuatro barras del MCDA. Son la evidencia: dejan comprobar por qué un
+   proveedor quedó encima de otro, en vez de pedir que se confíe en la frase. */
+.barras {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 7px 14px;
+  margin-top: 4px;
+}
+
+.barra {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1px 7px;
+  align-items: center;
+}
+
+.barra-nombre {
+  font-family: var(--display);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--chalk-faint);
+}
+
+.barra-valor {
+  font-size: 11px;
+  color: var(--chalk-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.barra-riel {
+  grid-column: 1 / -1;
+  height: 3px;
+  border-radius: 99px;
+  background: rgba(232, 239, 233, 0.1);
+  overflow: hidden;
+}
+
+.barra-relleno {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--chalk-faint);
+  transform-origin: left;
+  animation: crecer 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.proveedor[data-puesto="1"][data-viable="si"] .barra-relleno {
+  background: var(--signal);
+}
+.proveedor[data-viable="no"] .barra-relleno {
+  background: rgba(229, 72, 77, 0.45);
+}
+
+@keyframes crecer {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.riesgo {
+  grid-column: 2;
+  margin-top: 5px;
+  font-size: 12.5px;
+  color: var(--caution);
+}
+
+/* ─── Espera ─────────────────────────────────────────────────────────────── */
+
+.espera {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--chalk-dim);
+}
+
+.espera-orbe {
+  position: relative;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #6ee7b7, var(--signal) 55%, #0f7a58);
+  box-shadow: 0 0 16px -2px rgba(52, 211, 153, 0.75);
+  animation: latir 1.5s ease-in-out infinite;
+  flex: none;
+}
+
+@keyframes latir {
+  0%,
+  100% {
+    transform: scale(0.84);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.espera-etiqueta {
+  animation: entrar 0.26s ease both;
+}
+
+@keyframes entrar {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* ─── Redacción ──────────────────────────────────────────────────────────── */
+
+.redaccion {
+  padding: 10px 24px 16px;
+  border-top: 1px solid var(--line);
+  background: linear-gradient(180deg, transparent, rgba(5, 12, 9, 0.55));
+}
+
+.pildora {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 9px;
+  max-width: var(--ancho);
+  margin: 0 auto;
+  padding: 7px 7px 7px 17px;
+  border-radius: 26px;
+  background: linear-gradient(180deg, rgba(22, 40, 31, 0.96), rgba(14, 28, 22, 0.98));
+  box-shadow:
+    inset 0 0 0 1px rgba(232, 239, 233, 0.14),
+    inset 0 1px 0 rgba(232, 239, 233, 0.08),
+    0 18px 44px -24px rgba(0, 0, 0, 0.9);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.pildora:focus-within {
+  box-shadow:
+    inset 0 0 0 1px rgba(52, 211, 153, 0.34),
+    inset 0 1px 0 rgba(232, 239, 233, 0.08),
+    0 18px 50px -24px rgba(52, 211, 153, 0.4);
+}
+
+/* Aurora interior: movimiento lento y apenas perceptible bajo el cristal. */
+.pildora-aurora {
+  position: absolute;
+  inset: -40%;
+  pointer-events: none;
+  filter: blur(26px);
+  opacity: 0.5;
+}
+.pildora-aurora i {
+  position: absolute;
+  display: block;
+  width: 42%;
+  height: 160%;
+  border-radius: 50%;
+  opacity: 0.5;
+  animation: derivar 11s ease-in-out infinite alternate;
+}
+.pildora-aurora i:nth-child(1) {
+  left: 4%;
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.45), transparent 68%);
+  animation-duration: 9s;
+}
+.pildora-aurora i:nth-child(2) {
+  left: 36%;
+  background: radial-gradient(circle, rgba(232, 239, 233, 0.22), transparent 68%);
+  animation-duration: 13s;
+  animation-direction: alternate-reverse;
+}
+.pildora-aurora i:nth-child(3) {
+  left: 68%;
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.3), transparent 68%);
+  animation-duration: 15s;
+}
+
+@keyframes derivar {
+  from {
+    transform: translateX(-14%);
+  }
+  to {
+    transform: translateX(14%);
+  }
+}
+
+.campo {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-height: 168px;
+  padding: 11px 0;
+  border: 0;
+  background: transparent;
+  color: var(--chalk);
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+  resize: none;
+}
+.campo::placeholder {
+  color: var(--chalk-faint);
+}
+.campo:focus {
+  outline: none;
+}
+
+.enviar {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(232, 239, 233, 0.07);
+  color: var(--chalk-faint);
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+.enviar svg {
+  width: 19px;
+  height: 19px;
+}
+.enviar[data-listo] {
+  background: var(--signal);
+  color: #04120c;
+}
+.enviar[data-listo]:hover {
+  transform: translateY(-1px);
+}
+.enviar:active {
+  transform: translateY(0) scale(0.95);
+}
+.enviar:disabled {
+  cursor: default;
+  transform: none;
+}
+
+.nota-pie {
+  max-width: var(--ancho);
+  margin: 9px auto 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--chalk-faint);
+  text-align: center;
+}
+
+.anuncio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* ─── Pantallas estrechas ────────────────────────────────────────────────── */
+
+@media (max-width: 620px) {
+  .cabecera {
+    padding: 12px 16px 10px;
+  }
+  .marca-rol {
+    display: none;
+  }
+  .hilo {
+    padding: 22px 16px 8px;
+  }
+  .redaccion {
+    padding: 8px 16px 12px;
+  }
+  .bienvenida {
+    padding-top: 3vh;
+  }
+  .proveedor {
+    grid-template-columns: 26px 1fr;
+    gap: 3px 10px;
+  }
+  .nota-pie {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hilo {
+    scroll-behavior: auto;
+  }
+  .pildora-aurora i,
+  .espera-orbe,
+  .turno,
+  .espera-etiqueta,
+  .barra-relleno {
+    animation: none;
+  }
+  .sello {
+    transition: opacity 0.01ms;
+  }
+}
