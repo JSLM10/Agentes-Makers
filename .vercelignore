@@ -1,0 +1,12 @@
+.git
+.venv
+venv
+__pycache__
+*.pyc
+tests
+evals
+docs
+web
+*.ipynb
+*.pdf
+.vercel
