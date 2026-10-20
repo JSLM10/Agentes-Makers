@@ -28,18 +28,21 @@ Usuario / Tienda → Ingesta → G0 (Preflight) → G1 (Integridad) → G2 (Filt
 
 ### Los Pilares del Sistema
 
-1. **Interfaz de Despacho:** `python web.py` levanta una interfaz que corre el pipeline real y emite la traza de las 6 aduanas por streaming, sellando cada una en el momento en que resuelve. Deja ver algo que un log no transmite: los gates deterministas tardan milisegundos y la espera larga es siempre el modelo. Se puede alternar entre el modelo real y el motor determinista sin red desde la misma pantalla.
-2. **Arquitectura de Microservicios:** Módulos desacoplados en `src/` con Ingesta y normalización, Motor de Gates (`src/gates/`), Motor de Decisión Multicriterio (`src/scoring/`), Síntesis LLM desacoplada (`src/services/`) y Orquestador de Pipeline (`src/pipeline_orchestrator.py`).
-3. **Lógica Matemática Determinista (MCDA):** Fórmulas continuas de normalización para ahorro relativo de precio, penalización no lineal de envíos, escalamiento de calificación en $[3.5, 5.0]$, buffer logarítmico de inventario y penalización de $60\%$ ante reseñas con alertas de fraude o roturas.
-4. **Motor de 6 Gates de Calidad y Seguridad:**
+1. **Agente conversacional:** se le escribe en lenguaje corriente —*«necesito saber si el proveedor es bueno, el envío tarda 12 días, cuesta 8 dólares y tiene 4.5»*— y responde con un veredicto. La capa de `src/conversacion/` decide qué clase de mensaje llegó: un saludo o una pregunta sobre qué sabe hacer se contestan conversando; a una consulta a la que le faltan datos se le pide exactamente lo que falta; y solo una que trae proveedores con cifras dispara el pipeline completo. Recuerda entre turnos, así que se puede dar el precio en un mensaje y la calificación en el siguiente.
+2. **Veredicto redactado desde el contrato, no desde el modelo:** la frase que lee el comerciante se arma campo por campo del contrato que ya validó Gate 4, con plantillas deterministas. Es deliberado: si Gate 4 vetó una recomendación y la prosa saliera del modelo, nada impediría que la siguiera recomendando con otras palabras — la aduana quedaría en la traza y el usuario leería lo contrario. El modelo sí escribe los turnos que no cargan veredicto, donde no hay cifras que proteger.
+3. **Anclaje de la lectura (Gate A):** leer con un modelo abre una vía de alucinación que el pipeline no tenía — inventar un precio que el usuario nunca dijo. Toda cifra y todo enlace que la lectura extraiga se comprueba contra el texto literal del usuario; lo que no aparece se anula y se le dice al usuario qué se descartó. El pipeline vigila la salida del modelo; esta aduana vigila su entrada.
+4. **Interfaz de despacho:** `python web.py` levanta la misma interfaz que está desplegada, con las seis aduanas sellándose en secuencia con su latencia real y el desglose MCDA de cada proveedor bajo cada respuesta. Deja ver algo que un log no transmite: los gates deterministas tardan milisegundos y la espera larga es siempre el modelo. Se puede forzar el motor determinista sin red con `--offline`.
+5. **Arquitectura de Microservicios:** Módulos desacoplados en `src/` con Ingesta y normalización, Motor de Gates (`src/gates/`), Motor de Decisión Multicriterio (`src/scoring/`), Síntesis LLM desacoplada (`src/services/`), capa conversacional (`src/conversacion/`) y Orquestador de Pipeline (`src/pipeline_orchestrator.py`).
+6. **Lógica Matemática Determinista (MCDA):** Fórmulas continuas de normalización para ahorro relativo de precio, penalización no lineal de envíos, escalamiento de calificación en $[3.5, 5.0]$, buffer logarítmico de inventario y penalización de $60\%$ ante reseñas con alertas de fraude o roturas.
+7. **Motor de 6 Gates de Calidad y Seguridad:**
    - **Gate 0 (Pre-Flight):** Verificación de credenciales y conectividad con NVIDIA NIM.
    - **Gate 1 (Ingestion Integrity):** Detección y bloqueo de prompt injection o payloads corruptos.
    - **Gate 2 (Sanity & Hard Business Filter):** Exclusión de precios $\le 0$, stock $\le 0$, rating $< 3.5$ y listas negras.
    - **Gate 3 (Viability Triage):** Cortocircuito con coste cero de LLM si ningún proveedor cumple las condiciones mínimas.
    - **Gate 4 (LLM Guardrails & Contract):** Validación estricta con Pydantic V2 del contrato canónico de 9 campos, veto de acciones prohibidas (*"compra realizada"*, *"proveedor cambiado"*), veto del proveedor recomendado si su calificación es inferior a 3.5, y **veto determinista de discrepancias contra el input**: si el enlace entregado no es el del proveedor recomendado, o si ese proveedor no estaba entre los candidatos, la salida se repara y pasa a revisión humana.
    - **Gate 5 (Delivery & Idempotency):** Hash de firma SHA-256 sobre producto y candidatos, que sirve de clave de idempotencia y de traza de auditoría para la entrega.
-5. **Enlace al Producto sin Alucinación:** El contrato incluye `url_producto`, el único campo que **el modelo nunca produce**. Lo escribe el pipeline copiándolo del candidato ganador del input. La razón es concreta: un enlace inventado no es una respuesta imprecisa, es un comerciante comprándole al proveedor equivocado. El enlace es un dato del catálogo, así que se copia en vez de inferirse, y Gate 4 verifica que el entregado sea exactamente el del input.
-6. **Framework de Evals (5 Capas):** Pruebas de contrato y esquema, robustez adversarial, monotonicidad matemática, benchmark con dataset patrón curado (`evals/data/golden_dataset.json`), y SLAs de latencia y estabilidad.
+8. **Enlace al Producto sin Alucinación:** El contrato incluye `url_producto`, el único campo que **el modelo nunca produce**. Lo escribe el pipeline copiándolo del candidato ganador del input. La razón es concreta: un enlace inventado no es una respuesta imprecisa, es un comerciante comprándole al proveedor equivocado. El enlace es un dato del catálogo, así que se copia en vez de inferirse, y Gate 4 verifica que el entregado sea exactamente el del input.
+9. **Framework de Evals (5 Capas):** Pruebas de contrato y esquema, robustez adversarial, monotonicidad matemática, benchmark con dataset patrón curado (`evals/data/golden_dataset.json`), y SLAs de latencia y estabilidad.
 
 ---
 
@@ -61,8 +64,9 @@ Usuario / Tienda → Ingesta → G0 (Preflight) → G1 (Integridad) → G2 (Filt
 # 0. Instalar dependencias
 pip install -r requirements.txt
 
-# Interfaz web: corre el pipeline real y estampa cada aduana en vivo
+# Interfaz de chat: el agente conversacional con la traza de las 6 aduanas
 python web.py                     # http://localhost:8000
+python web.py --offline           # fuerza el motor determinista, sin red
 
 # Correr un caso y ver la traza de los 6 Gates y el contrato de salida
 python demo.py                    # caso de ejemplo, contra el modelo real
@@ -128,6 +132,43 @@ está en [evals/results/transcripcion_demo.txt](evals/results/transcripcion_demo
 
 ---
 
+### Despliegue en Vercel
+
+Todo el producto va en un solo despliegue: el frontend estático de `public/` y el pipeline
+completo como funciones serverless de Python en `api/`. Sin paso de compilación y sin
+`node_modules`.
+
+```bash
+# Con el CLI
+npm i -g vercel
+vercel link
+vercel env add NVIDIA_API_KEY production   # pega la clave cuando la pida
+vercel env add NVIDIA_MODEL production     # nvidia/nemotron-3.5-lightning-30b-a3b
+vercel --prod
+```
+
+O desde vercel.com: **Add New > Project**, se importa el repositorio, se deja el framework
+en *Other* (`vercel.json` ya fija `outputDirectory` y el runtime), se añaden las dos
+variables de entorno y se despliega.
+
+| Variable | Para qué | ¿Obligatoria? |
+|---|---|---|
+| `NVIDIA_API_KEY` | Acceso al endpoint de NVIDIA NIM | No: sin ella el agente corre con el motor determinista y lo anuncia en la interfaz |
+| `NVIDIA_MODEL` | Modelo de lectura y síntesis | No: por defecto `nvidia/nemotron-3.5-lightning-30b-a3b` |
+| `CORS_ORIGEN` | Origen externo autorizado | No: frontend y API comparten dominio, se deja vacío |
+
+**Sobre el sellado de las aduanas.** En local, `web.py` podía emitir la traza por streaming.
+Una función serverless devuelve la respuesta completa de una vez, así que la interfaz
+desplegada recibe el informe entero y reproduce el sellado al recibirlo. Las latencias de
+cada aduana son reales —las mide el pipeline, van en la respuesta y se muestran en cada
+sello—; lo reproducido es la secuencia, a escala y conservando las proporciones.
+
+**Tiempo máximo de ejecución.** `vercel.json` pide `maxDuration: 60`. Un turno con llamada
+al modelo ronda los 3–6 s, pero el plan Hobby corta en 10 s por defecto y un pico del
+endpoint se llevaría la respuesta por delante.
+
+---
+
 ### Estructura del Repositorio
 
 ```
@@ -137,8 +178,15 @@ está en [evals/results/transcripcion_demo.txt](evals/results/transcripcion_demo
 ├── .env                                         # NVIDIA_API_KEY / NVIDIA_MODEL (NO se sube)
 ├── requirements.txt                             # Dependencias de ejecución
 ├── demo.py                                      # Corre un caso y muestra Gates + contrato
-├── web.py                                       # Servidor de la interfaz (solo librería estándar)
-├── web/                                         # Interfaz: index.html, app.css, app.js
+├── web.py                                       # Servidor local, espejo del despliegue (stdlib)
+├── vercel.json                                  # Configuración del despliegue
+├── .env.example                                 # Plantilla de variables de entorno
+├── api/                                         # Funciones serverless de Vercel
+│   ├── chat.py                                  # POST /api/chat — un turno del agente
+│   ├── casos.py                                 # GET  /api/casos — casos de demostración
+│   └── salud.py                                 # GET  /api/salud — modelo y credenciales
+├── public/                                      # Interfaz: index.html, app.css, app.js
+├── web/                                         # Interfaz anterior (superada por public/)
 ├── Sesion 8 - Use case - FluentDrop.ipynb       # Notebook principal del agente
 ├── docs/
 │   ├── ARCHITECTURE_MICROSERVICIOS.md          # Especificación técnica maestra completa
@@ -148,6 +196,10 @@ está en [evals/results/transcripcion_demo.txt](evals/results/transcripcion_demo
 │   ├── scoring/mcda_engine.py                   # Motor determinista de decisión MCDA
 │   ├── gates/gates_engine.py                    # Motor de los 6 Gates de calidad y seguridad
 │   ├── services/llm_synthesis.py                # Servicio desacoplado NVIDIA NIM / fallback
+│   ├── conversacion/                            # Capa conversacional
+│   │   ├── extraccion.py                        # Lenguaje natural -> ProductInput + anclaje
+│   │   ├── redaccion.py                         # Contrato validado -> prosa
+│   │   └── agente.py                            # Un turno de principio a fin
 │   └── pipeline_orchestrator.py                 # Orquestador del pipeline
 ├── evals/                                       # Evaluaciones y validaciones
 │   ├── eval_fluentdrop.py                       # Evaluación offline del contrato
@@ -181,7 +233,10 @@ está en [evals/results/transcripcion_demo.txt](evals/results/transcripcion_demo
 
 ### Stack Técnico
 
-- **LLM**: NVIDIA Nemotron 3 Super 120B vía NVIDIA NIM, configurable con `NVIDIA_MODEL` (fallback a GPT-OSS-20B y motor sintético).
+- **LLM**: NVIDIA Nemotron 3.5 Lightning 30B vía NVIDIA NIM, configurable con `NVIDIA_MODEL`
+  (secundario GPT-OSS-20B; por debajo, motor determinista sin red).
+  `nemotron-3-super-120b-a12b` aparece al listar el catálogo del endpoint pero devuelve 404
+  salvo que la cuenta tenga esa función habilitada, así que no sirve como predeterminado.
 - **Validación & Esquemas**: Pydantic V2 para validación profunda y cumplimiento estricto del contrato canónico de 9 campos, de los cuales el modelo produce 8.
 - **Scoring & Lógica**: Algoritmo determinista multicriterio (MCDA) con análisis no lineal.
 - **Evaluación**: Framework de 5 capas (esquemas, robustez adversarial, monotonicidad matemática, golden dataset y estabilidad).
