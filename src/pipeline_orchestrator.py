@@ -165,6 +165,7 @@ class FluentDropPipeline:
         self,
         input_data: Union[str, ProductInput, Dict[str, Any]],
         on_gate: Optional[Callable[[GateResult], None]] = None,
+        raw_text_override: Optional[str] = None,
     ) -> PipelineReport:
         """
         Ejecuta el pipeline completo gobernado por los 6 Gates.
@@ -173,6 +174,14 @@ class FluentDropPipeline:
         GateResult apenas el gate termina, sin esperar a que el pipeline
         complete. Sirve para emitir progreso en vivo o enviar la traza a un
         sistema de monitoreo. No altera la ejecución ni el resultado.
+
+        `raw_text_override` es el texto que verán Gate 1 y el prompt de
+        síntesis cuando la entrada llega ya estructurada. Sin él, un
+        `ProductInput` hace que el pipeline reconstruya un texto limpio a
+        partir de los campos, y Gate 1 inspecciona esa reconstrucción en vez
+        del mensaje original: una inyección que la capa de lectura descartó al
+        estructurar pasaría la aduana de integridad en verde. Quien tenga el
+        texto que escribió el usuario debe pasarlo aquí.
         """
         start_time = time.perf_counter()
         execution_id = str(uuid.uuid4())[:8]
@@ -202,6 +211,9 @@ class FluentDropPipeline:
             raw_text = json.dumps(input_data, ensure_ascii=False)
         else:
             raw_text = str(input_data)
+
+        if raw_text_override is not None:
+            raw_text = raw_text_override
 
         # --- GATE 0: Pre-Flight ---
         g0 = self.gates.run_pre_flight()
